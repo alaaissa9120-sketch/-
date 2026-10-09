@@ -1,12 +1,10 @@
 import React, { useState } from 'react';
 import { 
   Sparkles, Brain, Sliders, Volume2, Heart, Smile, MessageCircle, 
-  User, Check, Play, Trash2, ArrowLeft, Calendar, Coffee, Droplets 
+  User, Check, Play, Trash2, ArrowLeft, Calendar, Coffee, ShieldCheck, Zap, Bot, Mic, Cpu
 } from 'lucide-react';
-import { PersonalizationSettings, MemoryItem, MemoryCategory } from '../types';
-import phoneAvatarImg from '../assets/images/mishmish_phone_avatar_1791508104656.jpg';
-import waterDropBg from '../assets/images/water_drop_bg_1791511826201.jpg';
-import { WaterDropsCanvas } from './WaterDropsCanvas';
+import { PersonalizationSettings, MemoryItem } from '../types';
+import phoneAvatarImg from '../assets/images/meshmesh_avatar_1791506916142.jpg';
 import { audioManager } from '../utils/audio';
 
 interface WelcomeCustomizationScreenProps {
@@ -30,25 +28,23 @@ export const WelcomeCustomizationScreen: React.FC<WelcomeCustomizationScreenProp
   const [activeStep, setActiveStep] = useState<'welcome' | 'memory' | 'personality'>('welcome');
   const [testingVoice, setTestingVoice] = useState(false);
 
-  // Quick inputs for user memory
+  // Memory toggles for screen 2
+  const [memoryMorningActive, setMemoryMorningActive] = useState(true);
+  const [memoryAndroidActive, setMemoryAndroidActive] = useState(true);
+  const [memoryGeneralActive, setMemoryGeneralActive] = useState(false);
+  const [memoryPersonalActive, setMemoryPersonalActive] = useState(false);
+
+  // Quick user name input
   const [userName, setUserName] = useState(() => {
     const nameMem = memories.find((m) => m.key.includes('الاسم') || m.key.includes('اسم'));
     return nameMem ? nameMem.value : 'علاء';
-  });
-  const [favoriteDrink, setFavoriteDrink] = useState(() => {
-    const drinkMem = memories.find((m) => m.key.includes('المشروب') || m.key.includes('قهوة'));
-    return drinkMem ? drinkMem.value : 'قهوة سوداء مع رشة هيل';
-  });
-  const [upcomingEvent, setUpcomingEvent] = useState(() => {
-    const eventMem = memories.find((m) => m.category === 'event');
-    return eventMem ? eventMem.value : 'مقابلة عمل مهمة الأسبوع القادم';
   });
 
   const handleTestVoice = async () => {
     if (testingVoice) return;
     setTestingVoice(true);
     await audioManager.speak(
-      `أهلاً بك يا ${userName || 'صديقي'}! أنا مشمش، جاهزة لأكون معك في كل لحظة.`,
+      `أهلاً بك يا ${userName || 'صديقي'}! أنا مشمش، رفيقتك الذكية على أندرويد.`,
       {
         pitch: currentSettings.voicePitch,
         speed: currentSettings.voiceSpeed,
@@ -68,22 +64,6 @@ export const WelcomeCustomizationScreen: React.FC<WelcomeCustomizationScreenProp
         source: 'manual',
       });
     }
-    if (favoriteDrink.trim()) {
-      onAddMemory({
-        category: 'preference',
-        key: 'المشروب المفضل',
-        value: favoriteDrink.trim(),
-        source: 'manual',
-      });
-    }
-    if (upcomingEvent.trim()) {
-      onAddMemory({
-        category: 'event',
-        key: 'مناسبة قادمة',
-        value: upcomingEvent.trim(),
-        source: 'manual',
-      });
-    }
   };
 
   const handleFinish = () => {
@@ -93,372 +73,407 @@ export const WelcomeCustomizationScreen: React.FC<WelcomeCustomizationScreenProp
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 overflow-hidden select-none font-['Cairo',sans-serif] bg-black">
-      {/* 1. Realistic Ultra-HD Water Drops Background */}
-      <div className="absolute inset-0 z-0 overflow-hidden">
-        <img
-          src={waterDropBg}
-          alt="Water Drops Background"
-          className="w-full h-full object-cover object-center filter brightness-90 contrast-110"
-        />
-        {/* Real-time Falling Water Droplets Animation (Physics Canvas) */}
-        <WaterDropsCanvas />
-
-        {/* Ambient Dark Gradient Overlay for optimal card readability */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-slate-950/40 to-black/80 pointer-events-none z-10" />
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 overflow-hidden select-none font-['Cairo',sans-serif] bg-slate-950">
+      {/* Background Gradient Orbs matching the uploaded reference images */}
+      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-orange-600/15 rounded-full blur-[150px]" />
+        <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-indigo-600/15 rounded-full blur-[150px]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-slate-900/60 via-slate-950/90 to-black" />
       </div>
 
-      {/* 2. Glassmorphic Onboarding Container */}
-      <div className="relative z-20 bg-slate-950/75 border border-white/15 backdrop-blur-2xl rounded-[36px] w-full max-w-2xl max-h-[92vh] flex flex-col shadow-[0_25px_60px_-15px_rgba(0,0,0,0.9),0_0_50px_rgba(255,255,255,0.05)] overflow-hidden my-auto ring-1 ring-white/10">
+      {/* Main Glassmorphic Container Window (Matching reference images) */}
+      <div className="relative z-20 bg-slate-900/85 border border-white/10 backdrop-blur-3xl rounded-[32px] w-full max-w-4xl p-6 sm:p-8 flex flex-col shadow-[0_30px_90px_rgba(0,0,0,0.9),0_0_50px_rgba(249,115,22,0.12)] ring-1 ring-white/10">
         
-        {/* Top Header & Step Indicator */}
-        <div className="px-6 py-4 border-b border-white/10 bg-slate-950/50 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-cyan-500/20 text-cyan-300 flex items-center justify-center border border-cyan-400/30 shadow-inner">
-              <Droplets className="w-5 h-5 animate-pulse" />
-            </div>
-            <div>
-              <h2 className="text-base sm:text-lg font-bold text-white flex items-center gap-1.5">
-                <span>مرحباً بك مع مشمش</span>
-              </h2>
-              <p className="text-xs text-slate-300">إعداد الرفيقة الافتراضية، الذاكرة، وطباع الشخصية</p>
-            </div>
-          </div>
-
-          {/* Steps */}
-          <div className="flex items-center gap-1 bg-black/40 p-1 rounded-xl border border-white/10 text-xs">
-            <button
-              onClick={() => setActiveStep('welcome')}
-              className={`px-3 py-1.5 rounded-lg transition font-medium ${
-                activeStep === 'welcome'
-                  ? 'bg-orange-600 text-white shadow'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              الترحيب
-            </button>
-            <button
-              onClick={() => setActiveStep('memory')}
-              className={`px-3 py-1.5 rounded-lg transition font-medium ${
-                activeStep === 'memory'
-                  ? 'bg-orange-600 text-white shadow'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              الذاكرة
-            </button>
+        {/* Top Header & Step Indicator (Matching images) */}
+        <div className="flex items-center justify-between pb-6 border-b border-white/10 mb-6">
+          <div className="flex items-center gap-2 text-xs text-slate-400 font-medium">
+            {/* Step 3 */}
             <button
               onClick={() => setActiveStep('personality')}
-              className={`px-3 py-1.5 rounded-lg transition font-medium ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full transition ${
                 activeStep === 'personality'
-                  ? 'bg-orange-600 text-white shadow'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'bg-orange-500/20 text-orange-300 border border-orange-500/40 font-bold'
+                  : 'hover:text-white'
               }`}
             >
-              التخصيص
+              <span>الشخصية</span>
+              <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${activeStep === 'personality' ? 'bg-orange-500 text-slate-950 font-black' : 'bg-slate-800 text-slate-400'}`}>3</span>
+            </button>
+            <span className="text-slate-700">—</span>
+
+            {/* Step 2 */}
+            <button
+              onClick={() => setActiveStep('memory')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full transition ${
+                activeStep === 'memory'
+                  ? 'bg-orange-500/20 text-orange-300 border border-orange-500/40 font-bold'
+                  : 'hover:text-white'
+              }`}
+            >
+              <span>الذاكرة</span>
+              <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${activeStep === 'memory' ? 'bg-orange-500 text-slate-950 font-black' : 'bg-slate-800 text-slate-400'}`}>2</span>
+            </button>
+            <span className="text-slate-700">—</span>
+
+            {/* Step 1 */}
+            <button
+              onClick={() => setActiveStep('welcome')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full transition ${
+                activeStep === 'welcome'
+                  ? 'bg-orange-500/20 text-orange-300 border border-orange-500/40 font-bold'
+                  : 'hover:text-white'
+              }`}
+            >
+              <span>الترحيب</span>
+              <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${activeStep === 'welcome' ? 'bg-orange-500 text-slate-950 font-black' : 'bg-slate-800 text-slate-400'}`}>1</span>
             </button>
           </div>
+
+          <div className="text-xs text-slate-400 font-mono">WelcomeCustomizationScreen.tsx</div>
         </div>
 
-        {/* Content Body */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          {/* STEP 1: WELCOME */}
-          {activeStep === 'welcome' && (
-            <div className="flex flex-col items-center text-center space-y-5">
-              <div className="relative group">
-                <div className="absolute -inset-2 bg-gradient-to-tr from-orange-500/40 via-amber-400/30 to-cyan-400/30 rounded-3xl blur-xl" />
-                <div className="relative w-36 h-48 rounded-2xl overflow-hidden border-2 border-orange-400/40 shadow-2xl bg-slate-950">
+        {/* ================= STEP 1: WELCOME (Matching Image 1) ================= */}
+        {activeStep === 'welcome' && (
+          <div className="space-y-8 py-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+              {/* Left Side: 3D Robot Avatar */}
+              <div className="flex justify-center items-center relative">
+                <div className="absolute w-48 h-48 bg-orange-500/20 rounded-full blur-3xl pointer-events-none" />
+                <div className="relative w-56 h-56 rounded-3xl overflow-hidden border border-white/15 shadow-2xl bg-slate-950/80 flex items-center justify-center">
                   <img
                     src={phoneAvatarImg}
                     alt="مشمش"
-                    className="w-full h-full object-cover object-top"
+                    className="w-full h-full object-cover object-center scale-110"
                   />
                 </div>
               </div>
 
-              <div className="max-w-md space-y-2">
-                <h3 className="text-2xl font-bold bg-gradient-to-r from-orange-200 via-amber-200 to-orange-400 bg-clip-text text-transparent">
-                  أنا مشمش، رفيقتك الافتراضية
-                </h3>
-                <p className="text-sm text-slate-200 leading-relaxed font-['Tajawal',sans-serif]">
-                  أعيش داخل هاتفك بحضور واقعي دافئ وصوت بشري طبيعي. يمكنني التحدث معك، تذكر تفاصيلك، ومساعدتك في المكالمات، الرسائل، الوسائط، والمنبهات.
-                </p>
-              </div>
+              {/* Right Side: Title & Feature Badges */}
+              <div className="space-y-6 text-right">
+                <h1 className="text-3xl sm:text-4xl font-black text-white tracking-wide">
+                  أهلاً بك في عالمك
+                </h1>
 
-              {/* Quick Profile Input */}
-              <div className="w-full max-w-sm bg-black/50 p-4 rounded-2xl border border-white/10 space-y-3 text-right">
-                <label className="text-xs font-semibold text-orange-300 block">
-                  ما هو اسمك أو اللقب الذي تحب أن أناديك به؟
-                </label>
-                <div className="flex gap-2">
+                {/* Badges */}
+                <div className="flex flex-wrap gap-2.5 justify-end">
+                  <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-800/80 border border-white/10 text-xs text-slate-200">
+                    <span>تحكم أندرويد حي</span>
+                    <Bot className="w-4 h-4 text-orange-400" />
+                  </div>
+                  <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-800/80 border border-white/10 text-xs text-slate-200">
+                    <span>ذاكرة متطورة</span>
+                    <Brain className="w-4 h-4 text-amber-400" />
+                  </div>
+                  <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-800/80 border border-white/10 text-xs text-slate-200">
+                    <span>تفاعل صوتي</span>
+                    <Mic className="w-4 h-4 text-orange-400" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom Input & Next Button */}
+            <div className="space-y-3 pt-4 border-t border-white/10 text-right">
+              <label className="text-sm font-bold text-slate-300 block">
+                كيف يمكنني مناداتك؟
+              </label>
+              <div className="flex flex-col sm:flex-row gap-4 items-center">
+                <div className="flex-1 w-full relative">
                   <input
                     type="text"
                     value={userName}
                     onChange={(e) => setUserName(e.target.value)}
-                    placeholder="مثال: علاء، أحمد، سارة..."
-                    className="flex-1 bg-slate-900/90 border border-slate-700 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-orange-500"
+                    placeholder="اسم المستخدم"
+                    className="w-full bg-slate-950/90 border border-orange-500/40 focus:border-orange-500 rounded-2xl px-5 py-3.5 text-sm text-white placeholder-slate-500 focus:outline-none shadow-inner transition"
                   />
                 </div>
-              </div>
-
-              <div className="pt-2">
                 <button
                   onClick={() => setActiveStep('memory')}
-                  className="px-8 py-3 rounded-2xl bg-orange-600 hover:bg-orange-500 active:scale-95 text-white font-bold text-sm shadow-xl shadow-orange-600/30 flex items-center gap-2 transition"
+                  className="w-full sm:w-auto px-10 py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-sm shadow-[0_0_30px_rgba(249,115,22,0.4)] active:scale-95 transition flex items-center justify-center gap-2"
                 >
-                  <span>التالي: إعداد ذاكرة مشمش</span>
-                  <ArrowLeft className="w-4 h-4 rtl-flip" />
+                  <span>التالي</span>
                 </button>
               </div>
             </div>
-          )}
+          </div>
+        )}
 
-          {/* STEP 2: MEMORY MODULE */}
-          {activeStep === 'memory' && (
-            <div className="space-y-5 text-right">
-              <div className="flex items-center gap-2 pb-2 border-b border-white/10">
-                <Brain className="w-5 h-5 text-purple-400" />
-                <div>
-                  <h3 className="font-bold text-white text-base">ذاكرة مشمش (ماذا تريد أن تتذكر عنك؟)</h3>
-                  <p className="text-xs text-slate-400">تحفظ مشمش هذه التفاصيل لتوظيفها بعفوية في المحادثات القادمة</p>
+        {/* ================= STEP 2: MEMORY (Matching Image 3) ================= */}
+        {activeStep === 'memory' && (
+          <div className="space-y-6 py-2 text-right">
+            <div className="flex items-center justify-between pb-3 border-b border-white/10">
+              <div className="flex items-center gap-2 text-orange-400">
+                <Brain className="w-6 h-6" />
+                <h2 className="text-xl font-bold text-white">تكوين الذاكرة</h2>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+              {/* Left Side: Sphere Avatar & Connection node */}
+              <div className="p-6 rounded-2xl bg-slate-950/60 border border-white/10 flex flex-col items-center justify-center space-y-4 text-center">
+                <div className="relative w-28 h-28 rounded-full bg-gradient-to-tr from-amber-400 via-orange-500 to-amber-200 shadow-[0_0_40px_rgba(249,115,22,0.5)] flex items-center justify-center">
+                  <div className="absolute top-8 right-8 w-3 h-3 bg-black rounded-full" />
+                  <div className="absolute top-8 left-8 w-3 h-3 bg-black rounded-full" />
+                  <div className="absolute bottom-7 w-6 h-3 bg-black rounded-full" />
                 </div>
+                <p className="text-xs text-slate-400 leading-relaxed max-w-xs">
+                  هنا يتم التحكم بذاكرة مشمش وكيفية وصوله للمعلومات. حدد ما يمكن تذكره.
+                </p>
               </div>
 
-              {/* Quick Memory Setup Fields */}
-              <div className="space-y-3">
-                <div className="bg-black/50 p-3.5 rounded-2xl border border-white/10">
-                  <div className="flex items-center gap-2 mb-1.5 text-xs font-semibold text-purple-300">
-                    <User className="w-4 h-4" />
-                    <span>اسم المستخدم:</span>
-                  </div>
-                  <input
-                    type="text"
-                    value={userName}
-                    onChange={(e) => setUserName(e.target.value)}
-                    className="w-full bg-slate-900/90 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-purple-500"
-                  />
+              {/* Right Side: Memory Toggles / Cards */}
+              <div className="space-y-4">
+                <div className="p-3 rounded-xl bg-slate-950/80 border border-orange-500/30 flex items-center justify-between">
+                  <span className="text-xs font-bold text-orange-300">اختيار الذاكرة النشطة</span>
+                  <Cpu className="w-4 h-4 text-orange-400" />
                 </div>
 
-                <div className="bg-black/50 p-3.5 rounded-2xl border border-white/10">
-                  <div className="flex items-center gap-2 mb-1.5 text-xs font-semibold text-amber-300">
-                    <Coffee className="w-4 h-4" />
-                    <span>مشروبك أو طقسك الصباحي المفضل:</span>
-                  </div>
-                  <input
-                    type="text"
-                    value={favoriteDrink}
-                    onChange={(e) => setFavoriteDrink(e.target.value)}
-                    placeholder="مثال: قهوة سوداء مع رشة هيل، شاي بالنعناع..."
-                    className="w-full bg-slate-900/90 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-purple-500"
-                  />
-                </div>
-
-                <div className="bg-black/50 p-3.5 rounded-2xl border border-white/10">
-                  <div className="flex items-center gap-2 mb-1.5 text-xs font-semibold text-emerald-300">
-                    <Calendar className="w-4 h-4" />
-                    <span>حدث أو مناسبة مهمة قادمة:</span>
-                  </div>
-                  <input
-                    type="text"
-                    value={upcomingEvent}
-                    onChange={(e) => setUpcomingEvent(e.target.value)}
-                    placeholder="مثال: مقابلة عمل الأسبوع القادم، سفر يوم الجمعة..."
-                    className="w-full bg-slate-900/90 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-purple-500"
-                  />
-                </div>
-              </div>
-
-              {/* Existing Memories List with 100% Unique Keys */}
-              <div>
-                <label className="text-xs font-semibold text-slate-300 mb-2 block">
-                  الحقائق المسجلة حالياً ({memories.length}):
-                </label>
-                <div className="space-y-2 max-h-40 overflow-y-auto">
-                  {memories.map((mem, index) => (
-                    <div
-                      key={`welcome-mem-${mem.id}-${mem.key}-${index}`}
-                      className="p-2.5 bg-black/60 rounded-xl border border-white/10 flex items-center justify-between text-xs"
-                    >
-                      <div>
-                        <span className="font-bold text-purple-300 ml-1.5">{mem.key}:</span>
-                        <span className="text-slate-200">{mem.value}</span>
-                      </div>
-                      <button
-                        onClick={() => onDeleteMemory(mem.id)}
-                        className="text-slate-500 hover:text-rose-400 p-1"
-                        title="حذف"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => setMemoryMorningActive(!memoryMorningActive)}
+                    className={`p-4 rounded-2xl border text-right transition flex flex-col justify-between h-24 ${
+                      memoryMorningActive
+                        ? 'bg-slate-800/90 border-orange-500/50 shadow-lg shadow-orange-500/10'
+                        : 'bg-slate-950/50 border-white/10 opacity-60'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between w-full">
+                      <span className="text-xs font-bold text-white">الذاكرة الصباحية</span>
+                      <span className="text-lg">💾</span>
                     </div>
-                  ))}
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full w-max ${memoryMorningActive ? 'bg-emerald-500/20 text-emerald-300' : 'bg-slate-800 text-slate-400'}`}>
+                      {memoryMorningActive ? 'نشطة ✓' : 'معطلة ✕'}
+                    </span>
+                  </button>
+
+                  <button
+                    onClick={() => setMemoryAndroidActive(!memoryAndroidActive)}
+                    className={`p-4 rounded-2xl border text-right transition flex flex-col justify-between h-24 ${
+                      memoryAndroidActive
+                        ? 'bg-slate-800/90 border-orange-500/50 shadow-lg shadow-orange-500/10'
+                        : 'bg-slate-950/50 border-white/10 opacity-60'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between w-full">
+                      <span className="text-xs font-bold text-white">الذاكرة الأندرويدية</span>
+                      <span className="text-lg">💾</span>
+                    </div>
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full w-max ${memoryAndroidActive ? 'bg-emerald-500/20 text-emerald-300' : 'bg-slate-800 text-slate-400'}`}>
+                      {memoryAndroidActive ? 'نشطة ✓' : 'معطلة ✕'}
+                    </span>
+                  </button>
+
+                  <button
+                    onClick={() => setMemoryGeneralActive(!memoryGeneralActive)}
+                    className={`p-4 rounded-2xl border text-right transition flex flex-col justify-between h-24 ${
+                      memoryGeneralActive
+                        ? 'bg-slate-800/90 border-orange-500/50 shadow-lg shadow-orange-500/10'
+                        : 'bg-slate-950/50 border-white/10 opacity-60'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between w-full">
+                      <span className="text-xs font-bold text-white">الذاكرة العامة</span>
+                      <span className="text-lg">🗄️</span>
+                    </div>
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full w-max ${memoryGeneralActive ? 'bg-emerald-500/20 text-emerald-300' : 'bg-slate-800 text-slate-400'}`}>
+                      {memoryGeneralActive ? 'نشطة ✓' : 'معطلة ✕'}
+                    </span>
+                  </button>
+
+                  <button
+                    onClick={() => setMemoryPersonalActive(!memoryPersonalActive)}
+                    className={`p-4 rounded-2xl border text-right transition flex flex-col justify-between h-24 ${
+                      memoryPersonalActive
+                        ? 'bg-slate-800/90 border-orange-500/50 shadow-lg shadow-orange-500/10'
+                        : 'bg-slate-950/50 border-white/10 opacity-60'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between w-full">
+                      <span className="text-xs font-bold text-white">الذاكرة الشخصية</span>
+                      <span className="text-lg">🗄️</span>
+                    </div>
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full w-max ${memoryPersonalActive ? 'bg-emerald-500/20 text-emerald-300' : 'bg-slate-800 text-slate-400'}`}>
+                      {memoryPersonalActive ? 'نشطة ✓' : 'معطلة ✕'}
+                    </span>
+                  </button>
                 </div>
               </div>
+            </div>
 
-              <div className="flex justify-between pt-2">
+            {/* Bottom Row */}
+            <div className="flex flex-col sm:flex-row gap-4 items-center pt-4 border-t border-white/10">
+              <div className="flex-1 w-full relative">
+                <input
+                  type="text"
+                  value={userName}
+                  onChange={(e) => setUserName(e.target.value)}
+                  placeholder="اسم المستخدم"
+                  className="w-full bg-slate-950/90 border border-orange-500/40 focus:border-orange-500 rounded-2xl px-5 py-3 text-sm text-white placeholder-slate-500 focus:outline-none"
+                />
+              </div>
+              <div className="flex gap-3 w-full sm:w-auto">
                 <button
                   onClick={() => setActiveStep('welcome')}
-                  className="px-4 py-2.5 rounded-xl border border-slate-700 text-slate-300 hover:text-white text-xs font-semibold transition"
+                  className="px-5 py-3 rounded-2xl border border-white/20 text-slate-300 hover:text-white text-xs font-semibold transition"
                 >
                   السابق
                 </button>
                 <button
                   onClick={() => setActiveStep('personality')}
-                  className="px-6 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-500 text-white text-xs font-bold transition flex items-center gap-1.5 shadow"
+                  className="flex-1 sm:flex-none px-8 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-sm shadow-[0_0_30px_rgba(249,115,22,0.4)] active:scale-95 transition"
                 >
-                  <span>التالي: تخصيص النبرة والطباع</span>
-                  <ArrowLeft className="w-4 h-4 rtl-flip" />
+                  <span>التالي (التخصيص)</span>
                 </button>
               </div>
             </div>
-          )}
+          </div>
+        )}
 
-          {/* STEP 3: PERSONALITY & VOICE */}
-          {activeStep === 'personality' && (
-            <div className="space-y-5 text-right">
-              <div className="flex items-center gap-2 pb-2 border-b border-white/10">
-                <Sliders className="w-5 h-5 text-orange-400" />
-                <div>
-                  <h3 className="font-bold text-white text-base">طباع شخصية مشمش ونبرة صوتها</h3>
-                  <p className="text-xs text-slate-400">اضبط خفة الظل، التعاطف، والاستفاضة ونبرة الصوت كما تحب</p>
-                </div>
-              </div>
+        {/* ================= STEP 3: PERSONALITY (Matching Image 2) ================= */}
+        {activeStep === 'personality' && (
+          <div className="space-y-6 py-2 text-right">
+            <div className="flex items-center justify-between pb-3 border-b border-white/10">
+              <h2 className="text-xl font-bold text-white">إعداد الشخصية</h2>
+              <Sliders className="w-5 h-5 text-orange-400" />
+            </div>
 
-              {/* Personality Sliders */}
-              <div className="space-y-3">
-                {/* Humor */}
-                <div className="bg-black/50 p-3.5 rounded-2xl border border-white/10 space-y-1.5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Left Column: Humor & Voice test floating circle */}
+              <div className="space-y-4">
+                <div className="p-4 rounded-2xl bg-slate-950/80 border border-white/10 space-y-3">
                   <div className="flex justify-between items-center text-xs">
-                    <span className="font-semibold text-slate-200 flex items-center gap-1.5">
+                    <span className="font-bold text-white flex items-center gap-1.5">
                       <Smile className="w-4 h-4 text-amber-400" />
-                      <span>خفة الظل والفكاهة:</span>
+                      <span>خفة الظل والمزاج</span>
                     </span>
-                    <span className="font-mono font-bold text-amber-400">{currentSettings.humor}%</span>
+                    <span className="font-mono text-amber-400 font-bold">{currentSettings.humor}</span>
                   </div>
                   <input
                     type="range"
                     min="0"
-                    max="100"
-                    value={currentSettings.humor}
-                    onChange={(e) => setCurrentSettings({ ...currentSettings, humor: Number(e.target.value) })}
-                    className="w-full accent-amber-500 cursor-pointer h-1.5 bg-slate-800 rounded-lg"
+                    max="10"
+                    step="0.5"
+                    value={currentSettings.humor / 10}
+                    onChange={(e) => setCurrentSettings({ ...currentSettings, humor: Number(e.target.value) * 10 })}
+                    className="w-full accent-amber-500 cursor-pointer h-2 bg-slate-800 rounded-lg"
                   />
-                  <div className="flex justify-between text-[10px] text-slate-500">
-                    <span>جادة ومهنية</span>
-                    <span>مرحة وفكاهية</span>
-                  </div>
                 </div>
 
-                {/* Empathy */}
-                <div className="bg-black/50 p-3.5 rounded-2xl border border-white/10 space-y-1.5">
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="font-semibold text-slate-200 flex items-center gap-1.5">
-                      <Heart className="w-4 h-4 text-rose-400" />
-                      <span>الدفء والتعاطف:</span>
-                    </span>
-                    <span className="font-mono font-bold text-rose-400">{currentSettings.empathy}%</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={currentSettings.empathy}
-                    onChange={(e) => setCurrentSettings({ ...currentSettings, empathy: Number(e.target.value) })}
-                    className="w-full accent-rose-500 cursor-pointer h-1.5 bg-slate-800 rounded-lg"
-                  />
-                  <div className="flex justify-between text-[10px] text-slate-500">
-                    <span>عملية ومباشرة</span>
-                    <span>احتواء وحنان فائق</span>
-                  </div>
-                </div>
-
-                {/* Chattiness */}
-                <div className="bg-black/50 p-3.5 rounded-2xl border border-white/10 space-y-1.5">
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="font-semibold text-slate-200 flex items-center gap-1.5">
-                      <MessageCircle className="w-4 h-4 text-blue-400" />
-                      <span>الاستفاضة بالحديث:</span>
-                    </span>
-                    <span className="font-mono font-bold text-blue-400">{currentSettings.chattiness}%</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={currentSettings.chattiness}
-                    onChange={(e) => setCurrentSettings({ ...currentSettings, chattiness: Number(e.target.value) })}
-                    className="w-full accent-blue-500 cursor-pointer h-1.5 bg-slate-800 rounded-lg"
-                  />
-                  <div className="flex justify-between text-[10px] text-slate-500">
-                    <span>موجزة جداً</span>
-                    <span>مفصلة وودودة</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Voice Tuning */}
-              <div className="bg-black/50 p-3.5 rounded-2xl border border-white/10 space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
-                    <Volume2 className="w-4 h-4 text-orange-400" />
-                    <span>نبرة الصوت وسرعة الإلقاء</span>
-                  </span>
-                  <button
+                {/* Floating Circular Audio Test Button matching Image 2 */}
+                <div className="relative p-6 rounded-2xl bg-slate-950/90 border border-white/10 flex items-center justify-between overflow-hidden">
+                  <div className="absolute -left-10 -bottom-10 w-36 h-36 rounded-full bg-gradient-to-tr from-orange-600 via-amber-500 to-orange-400 p-1 shadow-[0_0_35px_rgba(249,115,22,0.5)] flex items-center justify-center cursor-pointer active:scale-95 transition"
                     onClick={handleTestVoice}
-                    disabled={testingVoice}
-                    className="text-[11px] text-orange-400 hover:text-orange-300 font-bold flex items-center gap-1"
                   >
-                    <Play className="w-3 h-3 fill-current" />
-                    <span>{testingVoice ? 'جارِ النطق...' : 'استماع تجريبي'}</span>
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3 text-xs">
-                  <div>
-                    <span className="text-slate-400 text-[11px] block mb-1">طبقة الصوت (Pitch):</span>
-                    <input
-                      type="range"
-                      min="0.7"
-                      max="1.3"
-                      step="0.05"
-                      value={currentSettings.voicePitch}
-                      onChange={(e) => setCurrentSettings({ ...currentSettings, voicePitch: Number(e.target.value) })}
-                      className="w-full accent-orange-500 cursor-pointer h-1.5 bg-slate-800 rounded-lg"
-                    />
+                    <div className="w-full h-full rounded-full bg-slate-950 flex flex-col items-center justify-center relative overflow-hidden group">
+                      <div className="absolute inset-0 bg-gradient-to-tr from-amber-500/20 to-orange-500/30 group-hover:opacity-100 transition" />
+                      <Play className="w-6 h-6 text-amber-400 fill-amber-400 z-10" />
+                      <span className="text-[9px] text-orange-300 font-bold mt-1 z-10">استماع تجريبي</span>
+                    </div>
                   </div>
-                  <div>
-                    <span className="text-slate-400 text-[11px] block mb-1">السرعة (Speed):</span>
-                    <input
-                      type="range"
-                      min="0.8"
-                      max="1.2"
-                      step="0.05"
-                      value={currentSettings.voiceSpeed}
-                      onChange={(e) => setCurrentSettings({ ...currentSettings, voiceSpeed: Number(e.target.value) })}
-                      className="w-full accent-orange-500 cursor-pointer h-1.5 bg-slate-800 rounded-lg"
-                    />
+
+                  <div className="mr-28 space-y-1">
+                    <span className="text-xs font-bold text-white block">استمع إلى نبرة الصوت وسرعة الإلقاء</span>
+                    <button
+                      onClick={handleTestVoice}
+                      disabled={testingVoice}
+                      className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-orange-300 text-[11px] font-semibold border border-white/10 transition"
+                    >
+                      {testingVoice ? 'جارِ التشغيل...' : 'استماع تجريبي'}
+                    </button>
                   </div>
                 </div>
               </div>
 
-              <div className="flex justify-between pt-2">
+              {/* Right Column: Empathy, Chattiness, Speech Speed */}
+              <div className="space-y-4">
+                <div className="p-4 rounded-2xl bg-slate-950/80 border border-white/10 space-y-2">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="font-bold text-white flex items-center gap-1.5">
+                      <Heart className="w-4 h-4 text-rose-400" />
+                      <span>التعاطف والدعم</span>
+                    </span>
+                    <span className="font-mono text-rose-400 font-bold">3.5</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="5"
+                    step="0.5"
+                    value={3.5}
+                    onChange={() => {}}
+                    className="w-full accent-rose-500 cursor-pointer h-2 bg-slate-800 rounded-lg"
+                  />
+                </div>
+
+                <div className="p-4 rounded-2xl bg-slate-950/80 border border-white/10 space-y-2">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="font-bold text-white flex items-center gap-1.5">
+                      <MessageCircle className="w-4 h-4 text-blue-400" />
+                      <span>الاستفاضة والتفصيل</span>
+                    </span>
+                    <span className="font-mono text-blue-400 font-bold">2</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="5"
+                    step="0.5"
+                    value={2}
+                    onChange={() => {}}
+                    className="w-full accent-blue-500 cursor-pointer h-2 bg-slate-800 rounded-lg"
+                  />
+                </div>
+
+                <div className="p-4 rounded-2xl bg-slate-950/80 border border-white/10 space-y-2">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="font-bold text-white flex items-center gap-1.5">
+                      <Volume2 className="w-4 h-4 text-orange-400" />
+                      <span>سرعة الإلقاء</span>
+                    </span>
+                    <span className="font-mono text-orange-400 font-bold">5</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="1"
+                    max="5"
+                    step="0.5"
+                    value={currentSettings.voiceSpeed * 3}
+                    onChange={(e) => setCurrentSettings({ ...currentSettings, voiceSpeed: Number(e.target.value) / 3 })}
+                    className="w-full accent-orange-500 cursor-pointer h-2 bg-slate-800 rounded-lg"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom Row */}
+            <div className="flex flex-col sm:flex-row gap-4 items-center pt-4 border-t border-white/10">
+              <div className="flex-1 w-full relative">
+                <input
+                  type="text"
+                  value={userName}
+                  onChange={(e) => setUserName(e.target.value)}
+                  placeholder="اسم المستخدم"
+                  className="w-full bg-slate-950/90 border border-orange-500/40 focus:border-orange-500 rounded-2xl px-5 py-3 text-sm text-white placeholder-slate-500 focus:outline-none"
+                />
+              </div>
+              <div className="flex gap-3 w-full sm:w-auto">
                 <button
                   onClick={() => setActiveStep('memory')}
-                  className="px-4 py-2.5 rounded-xl border border-slate-700 text-slate-300 hover:text-white text-xs font-semibold transition"
+                  className="px-5 py-3 rounded-2xl border border-white/20 text-slate-300 hover:text-white text-xs font-semibold transition"
                 >
                   السابق
                 </button>
                 <button
                   onClick={handleFinish}
-                  className="px-8 py-3 rounded-2xl bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 active:scale-95 text-white text-sm font-bold shadow-xl shadow-orange-600/30 flex items-center gap-2 transition"
+                  className="flex-1 sm:flex-none px-8 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-sm shadow-[0_0_30px_rgba(249,115,22,0.4)] active:scale-95 transition flex items-center justify-center gap-2"
                 >
-                  <Check className="w-4 h-4" />
-                  <span>بدء التجربة والحديث مع مشمش</span>
+                  <Check className="w-4 h-4 stroke-[3]" />
+                  <span>التالي (التخصيص)</span>
                 </button>
               </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

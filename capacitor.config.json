@@ -1,0 +1,8 @@
+{
+  "appId": "com.mishmish.android.companion",
+  "appName": "مشمش - رفيقة أندرويد الذكية",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  }
+}

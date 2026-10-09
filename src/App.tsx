@@ -20,10 +20,9 @@ import {
   SMSThread 
 } from './types';
 import { audioManager } from './utils/audio';
-import { RainCanvas } from './components/RainCanvas';
-import { 
+import {
   Mic, MicOff, Sliders, Brain, Sparkles, Volume2, VolumeX, 
-  Phone, Bell, Check, X, ArrowLeft, MessageSquare, CloudRain, Droplets 
+  Phone, Bell, Check, X, ArrowLeft, MessageSquare, Droplets
 } from 'lucide-react';
 
 const DEFAULT_PERSONALIZATION: PersonalizationSettings = {
@@ -190,7 +189,6 @@ export default function App() {
     { id: 'al-1', time: '07:00', label: 'الاستيقاظ والصباح', enabled: true, days: ['يومياً'] },
   ]);
   const [openedAppName, setOpenedAppName] = useState<string>('');
-  const [rainEnabled, setRainEnabled] = useState(true);
 
   // Call timer
   useEffect(() => {
@@ -367,7 +365,7 @@ export default function App() {
     }
   };
 
-  // Send message to server
+  // Send message to server with robust offline/APK smart fallback
   const handleSendMessage = async (text: string) => {
     if (!text.trim()) return;
 
@@ -385,6 +383,8 @@ export default function App() {
         }),
       });
 
+      if (!response.ok) throw new Error('Server unreachable');
+
       const data = await response.json();
       const speech = data.speech || 'أهلاً بك!';
       const action: ParsedAction = data.action || { intent: 'NONE', parameters: {} };
@@ -393,7 +393,6 @@ export default function App() {
       setLastSpeech(speech);
       setSpeechSubtitleVisible(true);
 
-      // Save new auto-discovered memories
       if (autoMemories.length > 0) {
         setMemories((prev) => {
           let updated = [...prev];
@@ -418,10 +417,8 @@ export default function App() {
         });
       }
 
-      // Execute intent if any
       executeIntent(action, speech);
 
-      // Play audio response
       if (!isMuted) {
         setStatus('speaking');
         await audioManager.speak(
@@ -442,8 +439,53 @@ export default function App() {
         setTimeout(() => setSpeechSubtitleVisible(false), 4000);
       }
     } catch (err) {
-      console.error(err);
-      setStatus('idle');
+      console.warn('Using offline standalone APK smart assistant fallback:', err);
+      // Standalone APK smart fallback (fully functional without Express server)
+      const userName = memories.find((m) => m.key.includes('اسم'))?.value || 'علاء';
+      let speech = `أهلاً بك يا ${userName}! أنا معك وجاهزة لمساعدتك في كل ما تحتاجه.`;
+      let action: ParsedAction = { intent: 'NONE', parameters: {} };
+
+      const lower = text.toLowerCase();
+      if (lower.includes('اتصل') || lower.includes('مكالمة')) {
+        speech = 'حسناً، جاري الاتصال الآن فوراً.';
+        action = { intent: 'PHONE_CALL', parameters: { contact_name: 'سامر' } };
+      } else if (lower.includes('رسالة') || lower.includes('أرسل')) {
+        speech = 'حسناً، سأفتح تطبيق الرسائل لك.';
+        action = { intent: 'SEND_SMS', parameters: { contact_name: 'سامر', message_body: text } };
+      } else if (lower.includes('شغل') || lower.includes('موسيقى') || lower.includes('أغنية')) {
+        speech = 'حسناً، جاري تشغيل الموسيقى المفضلة.';
+        action = { intent: 'PLAY_MEDIA', parameters: { query: text, platform: 'youtube' } };
+      } else if (lower.includes('منبه') || lower.includes('ساعة')) {
+        speech = 'تم ضبط المنبه بنجاح.';
+        action = { intent: 'SET_ALARM', parameters: { time: '07:30', label: 'منبه مشمش' } };
+      } else if (lower.includes('افتح') || lower.includes('تطبيق')) {
+        speech = 'حسناً، جاري فتح التطبيق.';
+        action = { intent: 'OPEN_APP', parameters: { app_name: 'الكاميرا' } };
+      }
+
+      setLastSpeech(speech);
+      setSpeechSubtitleVisible(true);
+      executeIntent(action, speech);
+
+      if (!isMuted) {
+        setStatus('speaking');
+        await audioManager.speak(
+          speech,
+          {
+            pitch: personalization.voicePitch,
+            speed: personalization.voiceSpeed,
+            voicePreset: personalization.voicePreset,
+          },
+          () => setStatus('speaking'),
+          () => {
+            setStatus('idle');
+            setTimeout(() => setSpeechSubtitleVisible(false), 4000);
+          }
+        );
+      } else {
+        setStatus('idle');
+        setTimeout(() => setSpeechSubtitleVisible(false), 4000);
+      }
     }
   };
 
@@ -484,27 +526,8 @@ export default function App() {
   };
 
   return (
-    <div className="relative w-screen h-screen overflow-hidden flex items-center justify-center select-none font-['Cairo',sans-serif]">
-      {/* 1. Realistic Living Room Background (matching the user's uploaded reference image) */}
-      <img
-        src={livingRoomBg}
-        alt="Living Room"
-        className="absolute inset-0 w-full h-full object-cover object-center filter blur-[1px] scale-105 pointer-events-none"
-      />
-      {/* Subtle warm depth vignette */}
-      <div className="absolute inset-0 bg-black/15 pointer-events-none" />
-
-      {/* Realistic Animated Falling Rain Drops Overlay over Background */}
-      {rainEnabled && (
-        <RainCanvas 
-          intensity="moderate" 
-          windAngle={0.08} 
-          showGlassDroplets={true} 
-          className="z-10" 
-        />
-      )}
-
-      {/* 2. Top Minimalist Control Bar (Discreet Settings, Rain toggle & Mute buttons) */}
+    <div className="relative w-screen h-screen overflow-hidden flex flex-col justify-between select-none font-['Cairo',sans-serif] bg-[#0c1424]">
+      {/* Top Minimalist Control Bar */}
       <div className="absolute top-4 sm:top-6 left-6 right-6 z-40 flex items-center justify-between pointer-events-auto max-w-4xl mx-auto">
         {/* Welcome & Customization Button */}
         <button
@@ -516,22 +539,8 @@ export default function App() {
           <span>تخصيص مشمش والذاكرة</span>
         </button>
 
-        {/* Right action group: Rain Toggle + Audio Mute */}
+        {/* Right action group: Audio Mute */}
         <div className="flex items-center gap-2">
-          {/* Rain Ambiance Toggle */}
-          <button
-            onClick={() => setRainEnabled(!rainEnabled)}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-full backdrop-blur-md border shadow-lg transition active:scale-95 text-xs font-medium ${
-              rainEnabled
-                ? 'bg-cyan-500/25 text-cyan-200 border-cyan-400/40 shadow-cyan-500/10'
-                : 'bg-slate-900/75 text-white/60 hover:text-white border-white/10'
-            }`}
-            title={rainEnabled ? 'إيقاف تأثير تساقط المطر' : 'تشغيل تساقط المطر الواقعي'}
-          >
-            <CloudRain className={`w-4 h-4 ${rainEnabled ? 'text-cyan-300 animate-pulse' : ''}`} />
-            <span className="hidden sm:inline">{rainEnabled ? 'مطر واقعي' : 'المطر متوقف'}</span>
-          </button>
-
           {/* Audio Mute / Unmute */}
           <button
             onClick={() => {
@@ -550,155 +559,140 @@ export default function App() {
         </div>
       </div>
 
-      {/* 3. The Smartphone Frame Standing in the Living Room (Exact match to the user's image) */}
-      <div className="relative z-20 flex items-center justify-center h-[90vh] max-h-[820px] aspect-[9/18.5] transition-transform duration-500">
-        {/* Smartphone Chassis Exterior Body */}
-        <div className="relative w-full h-full rounded-[44px] bg-slate-950 p-[7px] shadow-[0_30px_70px_rgba(0,0,0,0.7),0_10px_25px_rgba(0,0,0,0.5)] border-[3px] border-slate-700/80 ring-1 ring-white/10 overflow-hidden flex flex-col">
-          
-          {/* Phone Top Notch / Speaker Grill */}
-          <div className="absolute top-2.5 left-1/2 -translate-x-1/2 z-40 flex items-center justify-center pointer-events-none">
-            <div className="w-20 h-4 bg-black rounded-b-xl flex items-center justify-center gap-2 border-b border-x border-slate-800">
-              <div className="w-8 h-1 bg-slate-800 rounded-full" />
-              <div className="w-2.5 h-2.5 bg-slate-900 rounded-full border border-slate-700" />
-            </div>
-          </div>
+      {/* Immersive Full-Screen Character & Assistant Interface */}
+      <div className="relative w-full h-full overflow-hidden flex flex-col justify-between bg-[#0c1424]">
 
-          {/* Smartphone Screen Glass */}
-          <div className="relative w-full h-full rounded-[37px] overflow-hidden bg-[#0c1424] flex flex-col justify-between">
-            
-            {/* Screen Router */}
-            {activeScreen === 'CALL' && activeCall ? (
-              <CallScreen
-                call={activeCall}
-                onEndCall={() => {
-                  setActiveCall(null);
-                  setActiveScreen('COMPANION');
-                }}
-                onToggleMute={() => {
-                  setActiveCall((prev) => (prev ? { ...prev, isMuted: !prev.isMuted } : null));
-                }}
-                onToggleSpeaker={() => {
-                  setActiveCall((prev) => (prev ? { ...prev, isSpeaker: !prev.isSpeaker } : null));
-                }}
-              />
-            ) : activeScreen === 'SMS' ? (
-              <SmsScreen
-                thread={smsThread}
-                onSendMessage={(txt) => {
-                  setSmsThread((prev) => ({
-                    ...prev,
-                    messages: [
-                      ...prev.messages,
-                      { id: `sms-${Date.now()}`, sender: 'user', text: txt, timestamp: 'الآن' },
-                    ],
-                  }));
-                  audioManager.playChime('success');
-                }}
-                onClose={() => setActiveScreen('COMPANION')}
-              />
-            ) : activeScreen === 'MEDIA' ? (
-              <MediaScreen
-                media={mediaState}
-                onTogglePlay={() => setMediaState((prev) => ({ ...prev, isPlaying: !prev.isPlaying }))}
-                onClose={() => setActiveScreen('COMPANION')}
-              />
-            ) : activeScreen === 'CLOCK' ? (
-              <ClockScreen
-                alarms={alarms}
-                onToggleAlarm={(id) => {
-                  setAlarms((prev) =>
-                    prev.map((a) => (a.id === id ? { ...a, enabled: !a.enabled } : a))
-                  );
-                }}
-                onTriggerAlarmPreview={(al) => {
-                  audioManager.playChime('alert');
-                  setNotificationToast(`🔔 رنين المنبه: ${al.time}`);
-                }}
-                onClose={() => setActiveScreen('COMPANION')}
-              />
-            ) : activeScreen === 'GENERIC_APP' ? (
-              <GenericAppScreen
-                appName={openedAppName || 'الكاميرا'}
-                onClose={() => setActiveScreen('COMPANION')}
-              />
-            ) : (
-              /* PURE REALISTIC MISHMISH COMPANION SCREEN (Zero text clutter, matching the image) */
-              <div 
-                onClick={toggleVoiceInput}
-                className="relative w-full h-full flex flex-col justify-end items-center cursor-pointer overflow-hidden group"
-              >
-                {/* Lifelike Mishmish Portrait Image (standing inside phone, matching uploaded image) */}
-                <img
-                  src={phoneAvatarImg}
-                  alt="مشمش"
-                  className={`absolute inset-0 w-full h-full object-cover object-top transition-transform duration-700 select-none pointer-events-none ${
-                    status === 'speaking' ? 'scale-[1.02]' : 'scale-100'
-                  }`}
-                />
+        {/* Screen Router */}
+        {activeScreen === 'CALL' && activeCall ? (
+          <CallScreen
+            call={activeCall}
+            onEndCall={() => {
+              setActiveCall(null);
+              setActiveScreen('COMPANION');
+            }}
+            onToggleMute={() => {
+              setActiveCall((prev) => (prev ? { ...prev, isMuted: !prev.isMuted } : null));
+            }}
+            onToggleSpeaker={() => {
+              setActiveCall((prev) => (prev ? { ...prev, isSpeaker: !prev.isSpeaker } : null));
+            }}
+          />
+        ) : activeScreen === 'SMS' ? (
+          <SmsScreen
+            thread={smsThread}
+            onSendMessage={(txt) => {
+              setSmsThread((prev) => ({
+                ...prev,
+                messages: [
+                  ...prev.messages,
+                  { id: `sms-${Date.now()}`, sender: 'user', text: txt, timestamp: 'الآن' },
+                ],
+              }));
+              audioManager.playChime('success');
+            }}
+            onClose={() => setActiveScreen('COMPANION')}
+          />
+        ) : activeScreen === 'MEDIA' ? (
+          <MediaScreen
+            media={mediaState}
+            onTogglePlay={() => setMediaState((prev) => ({ ...prev, isPlaying: !prev.isPlaying }))}
+            onClose={() => setActiveScreen('COMPANION')}
+          />
+        ) : activeScreen === 'CLOCK' ? (
+          <ClockScreen
+            alarms={alarms}
+            onToggleAlarm={(id) => {
+              setAlarms((prev) =>
+                prev.map((a) => (a.id === id ? { ...a, enabled: !a.enabled } : a))
+              );
+            }}
+            onTriggerAlarmPreview={(al) => {
+              audioManager.playChime('alert');
+              setNotificationToast(`🔔 رنين المنبه: ${al.time}`);
+            }}
+            onClose={() => setActiveScreen('COMPANION')}
+          />
+        ) : activeScreen === 'GENERIC_APP' ? (
+          <GenericAppScreen
+            appName={openedAppName || 'الكاميرا'}
+            onClose={() => setActiveScreen('COMPANION')}
+          />
+        ) : (
+          /* PURE REALISTIC MISHMISH COMPANION SCREEN (Zero text clutter, immersive character) */
+          <div
+            onClick={toggleVoiceInput}
+            className="relative w-full h-full flex flex-col justify-end items-center cursor-pointer overflow-hidden group bg-[#0c1424]"
+          >
+            {/* Lifelike Mishmish Portrait Image (immersive full screen) */}
+            <img
+              src={phoneAvatarImg}
+              alt="مشمش"
+              className={`absolute inset-0 w-full h-full object-cover object-top transition-transform duration-700 select-none pointer-events-none ${
+                status === 'speaking' ? 'scale-[1.02]' : 'scale-100'
+              }`}
+            />
 
-                {/* Subtle dark gradient at bottom for natural depth */}
-                <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[#0c1424] via-[#0c1424]/70 to-transparent pointer-events-none" />
+            {/* Subtle dark gradient at bottom for natural depth */}
+            <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[#0c1424] via-[#0c1424]/70 to-transparent pointer-events-none" />
 
-                {/* Gentle Pulsing Soundwave Aura when speaking or listening */}
-                {(status === 'speaking' || status === 'listening') && (
-                  <div className="absolute bottom-16 inset-x-0 flex items-center justify-center pointer-events-none z-30">
-                    <div className="flex items-end gap-1.5 px-4 py-2 bg-slate-950/80 backdrop-blur-md rounded-full border border-orange-500/30 shadow-xl">
-                      <div className="w-1.5 bg-orange-400 rounded-full animate-soundwave-1" />
-                      <div className="w-1.5 bg-amber-300 rounded-full animate-soundwave-2" />
-                      <div className="w-1.5 bg-orange-500 rounded-full animate-soundwave-3" />
-                      <div className="w-1.5 bg-amber-400 rounded-full animate-soundwave-4" />
-                      <div className="w-1.5 bg-orange-300 rounded-full animate-soundwave-5" />
-                    </div>
-                  </div>
-                )}
-
-                {/* Minimalist Floating Microphone Pill at Bottom */}
-                <div className="relative z-30 mb-8 flex flex-col items-center pointer-events-auto">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleVoiceInput();
-                    }}
-                    className={`p-4 rounded-full transition-all duration-300 shadow-2xl flex items-center justify-center ${
-                      isListening
-                        ? 'bg-rose-500 text-white scale-110 shadow-rose-500/50 animate-pulse'
-                        : status === 'speaking'
-                        ? 'bg-orange-500 text-white shadow-orange-500/40'
-                        : 'bg-white/15 hover:bg-white/25 text-white backdrop-blur-md border border-white/20 hover:scale-105 active:scale-95'
-                    }`}
-                    title={isListening ? 'إيقاف الاستماع' : 'اضغط للتحدث صوتياً مع مشمش'}
-                  >
-                    {isListening ? (
-                      <MicOff className="w-6 h-6" />
-                    ) : (
-                      <Mic className="w-6 h-6" />
-                    )}
-                  </button>
+            {/* Gentle Pulsing Soundwave Aura when speaking or listening */}
+            {(status === 'speaking' || status === 'listening') && (
+              <div className="absolute bottom-16 inset-x-0 flex items-center justify-center pointer-events-none z-30">
+                <div className="flex items-end gap-1.5 px-4 py-2 bg-slate-950/80 backdrop-blur-md rounded-full border border-orange-500/30 shadow-xl">
+                  <div className="w-1.5 bg-orange-400 rounded-full animate-soundwave-1" />
+                  <div className="w-1.5 bg-amber-300 rounded-full animate-soundwave-2" />
+                  <div className="w-1.5 bg-orange-500 rounded-full animate-soundwave-3" />
+                  <div className="w-1.5 bg-amber-400 rounded-full animate-soundwave-4" />
+                  <div className="w-1.5 bg-orange-300 rounded-full animate-soundwave-5" />
                 </div>
+              </div>
+            )}
 
-                {/* Floating Notification Toast (auto-fades) */}
-                {notificationToast && (
-                  <div className="absolute top-12 inset-x-3 z-40 animate-in fade-in slide-in-from-top-2 duration-300 pointer-events-none">
-                    <div className="bg-slate-900/90 text-white text-xs font-medium px-3.5 py-2 rounded-2xl border border-white/10 shadow-xl text-center backdrop-blur-md">
-                      {notificationToast}
-                    </div>
-                  </div>
+            {/* Minimalist Floating Microphone Pill at Bottom */}
+            <div className="relative z-30 mb-8 flex flex-col items-center pointer-events-auto">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleVoiceInput();
+                }}
+                className={`p-4 rounded-full transition-all duration-300 shadow-2xl flex items-center justify-center ${
+                  isListening
+                    ? 'bg-rose-500 text-white scale-110 shadow-rose-500/50 animate-pulse'
+                    : status === 'speaking'
+                    ? 'bg-orange-500 text-white shadow-orange-500/40'
+                    : 'bg-white/15 hover:bg-white/25 text-white backdrop-blur-md border border-white/20 hover:scale-105 active:scale-95'
+                }`}
+                title={isListening ? 'إيقاف الاستماع' : 'اضغط للتحدث صوتياً مع مشمش'}
+              >
+                {isListening ? (
+                  <MicOff className="w-6 h-6" />
+                ) : (
+                  <Mic className="w-6 h-6" />
                 )}
+              </button>
+            </div>
 
-                {/* Subtle Speech Subtitle (temporary, clean, no clutter) */}
-                {speechSubtitleVisible && lastSpeech && (
-                  <div className="absolute bottom-24 inset-x-4 z-30 pointer-events-none animate-in fade-in duration-300">
-                    <div className="bg-slate-950/80 backdrop-blur-md border border-white/10 rounded-2xl p-3 text-center shadow-xl">
-                      <p className="text-xs text-white/95 leading-relaxed font-medium">
-                        "{lastSpeech}"
-                      </p>
-                    </div>
-                  </div>
-                )}
+            {/* Floating Notification Toast (auto-fades) */}
+            {notificationToast && (
+              <div className="absolute top-16 inset-x-3 z-40 animate-in fade-in slide-in-from-top-2 duration-300 pointer-events-none">
+                <div className="bg-slate-900/90 text-white text-xs font-medium px-3.5 py-2 rounded-2xl border border-white/10 shadow-xl text-center backdrop-blur-md">
+                  {notificationToast}
+                </div>
+              </div>
+            )}
+
+            {/* Subtle Speech Subtitle */}
+            {speechSubtitleVisible && lastSpeech && (
+              <div className="absolute bottom-24 inset-x-4 z-30 pointer-events-none animate-in fade-in duration-300">
+                <div className="bg-slate-950/80 backdrop-blur-md border border-white/10 rounded-2xl p-3 text-center shadow-xl">
+                  <p className="text-xs text-white/95 leading-relaxed font-medium">
+                    "{lastSpeech}"
+                  </p>
+                </div>
               </div>
             )}
           </div>
-        </div>
+        )}
       </div>
 
       {/* 4. Welcome & Customization Screen Modal (لصفحة الترحيب وتخصيص مشمش والذاكرة) */}

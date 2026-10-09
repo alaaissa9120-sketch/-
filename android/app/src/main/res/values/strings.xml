@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">مشمش - رفيقة أندرويد الذكية</string>
+    <string name="title_activity_main">مشمش - رفيقة أندرويد الذكية</string>
+    <string name="package_name">com.mishmish.android.companion</string>
+    <string name="custom_url_scheme">com.mishmish.android.companion</string>
+</resources>
