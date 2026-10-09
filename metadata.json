@@ -1,0 +1,8 @@
+{
+  "name": "مشمش - رفيقة أندرويد الافتراضية الذكية",
+  "description": "رفيقة افتراضية ذكية ودافئة مدمجة داخل نظام أندرويد للتفاعل الصوتي المباشر وتنفيذ الأوامر التقنية كالمكالمات والرسائل والوسائط والمنبهات.",
+  "requestFramePermissions": [
+    "microphone"
+  ],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
