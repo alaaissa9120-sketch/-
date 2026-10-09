@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import livingRoomBg from './assets/images/living_room_bg_1791508120847.jpg';
-import phoneAvatarImg from './assets/images/mishmish_phone_avatar_1791508104656.jpg';
-import { WelcomeCustomizationScreen } from './components/WelcomeCustomizationScreen';
+import { 
+  WelcomeCustomizationScreen 
+} from './components/WelcomeCustomizationScreen';
+import { InteractiveCompanion, CompanionGesture } from './components/InteractiveCompanion';
 import { 
   CallScreen, 
   SmsScreen, 
@@ -20,16 +21,19 @@ import {
   SMSThread 
 } from './types';
 import { audioManager } from './utils/audio';
-import { RainCanvas } from './components/RainCanvas';
+import characterAvatarImg from './assets/images/mishmish_phone_avatar_1791508104656.jpg';
+import classicAvatar from './assets/images/meshmesh_avatar_1791506916142.jpg';
+import cyberAvatar from './assets/images/meshmesh_cyber_1791507090382.jpg';
+import cozyAvatar from './assets/images/meshmesh_cozy_1791507103483.jpg';
 import { 
-  Mic, MicOff, Sliders, Brain, Sparkles, Volume2, VolumeX, 
-  Phone, Bell, Check, X, ArrowLeft, MessageSquare, CloudRain, Droplets 
+  Mic, MicOff, Volume2, VolumeX, Sliders, Bell, MessageSquare, Send, Sparkles, Smile, X
 } from 'lucide-react';
 
 const DEFAULT_PERSONALIZATION: PersonalizationSettings = {
   avatarStyle: 'classic',
   auraColor: 'peach',
   glowIntensity: 75,
+  coreVideoTheme: 'golden',
   voicePitch: 1.05,
   voiceSpeed: 1.0,
   voicePreset: 'kore',
@@ -58,6 +62,14 @@ const INITIAL_MEMORIES: MemoryItem[] = [
   },
   {
     id: 'mem-3',
+    category: 'preference',
+    key: 'الموسيقى الصباحية',
+    value: 'أغاني فيروز الهادئة',
+    source: 'manual',
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'mem-4',
     category: 'event',
     key: 'مناسبة قادمة',
     value: 'مقابلة عمل مهمة الأسبوع القادم',
@@ -82,7 +94,6 @@ const sanitizeMemories = (rawList: MemoryItem[]): MemoryItem[] => {
     if (!item || !item.key || !item.value) continue;
     const normalizedKey = item.key.trim().toLowerCase();
     if (seenKeys.has(normalizedKey)) {
-      // Update value of existing item if later
       const existing = sanitized.find((m) => m.key.trim().toLowerCase() === normalizedKey);
       if (existing) {
         existing.value = item.value;
@@ -131,6 +142,7 @@ export default function App() {
     }
   });
 
+  // Save changes
   useEffect(() => {
     try {
       localStorage.setItem('meshmesh_personalization', JSON.stringify(personalization));
@@ -147,27 +159,44 @@ export default function App() {
     }
   }, [memories]);
 
-  // Welcome / Customization Onboarding Modal
-  const [showWelcomeScreen, setShowWelcomeScreen] = useState(() => {
-    try {
-      return !localStorage.getItem('meshmesh_welcomed_v2');
-    } catch {
-      return true;
-    }
-  });
+  // Welcome Screen Modal (Steps 1, 2, 3 - Default 3 to display requested interface directly)
+  const [showWelcomeScreen, setShowWelcomeScreen] = useState(true);
+  const [welcomeInitialStep, setWelcomeInitialStep] = useState<1 | 2 | 3>(3);
 
-  // App & Intent Screens
+  // Screen State
   const [activeScreen, setActiveScreen] = useState<ActiveAppScreen>('COMPANION');
   const [notificationToast, setNotificationToast] = useState<string | null>(null);
 
-  // Voice Interaction & Processing State
+  // Gesture State & Feedback
+  const [activeGesture, setActiveGesture] = useState<CompanionGesture>('default');
+  const [gestureBadge, setGestureBadge] = useState<string | null>(null);
+
+  // Natural Human Conversation State
+  const [lastSpeech, setLastSpeech] = useState<string>('يا هلا وغلا! نورتني والله.. طمني كيف كان يومك اليوم؟');
+  const [showSubtitles, setShowSubtitles] = useState<boolean>(true);
+  const [showTextInput, setShowTextInput] = useState<boolean>(false);
+  const [textInput, setTextInput] = useState<string>('');
+
+  const handleTriggerGesture = (gesture: CompanionGesture) => {
+    setActiveGesture(gesture);
+    audioManager.playChime('pop');
+    if (gesture === 'hair') {
+      setGestureBadge('تسرح وتعدل خصلات شعرها بنعومة ✨');
+    } else if (gesture === 'wave') {
+      setGestureBadge('تلوح بيدها بود وترحاب 👋');
+    } else if (gesture === 'think') {
+      setGestureBadge('تتأمل وتفكر باهتمام 🤔');
+    } else {
+      setGestureBadge('الوضعية الطبيعية 🌸');
+    }
+    setTimeout(() => setGestureBadge(null), 3200);
+  };
+
+  // Voice Interaction State
   const [status, setStatus] = useState<'idle' | 'listening' | 'thinking' | 'speaking' | 'executing'>('idle');
   const [isMuted, setIsMuted] = useState(false);
   const [isListening, setIsListening] = useState(false);
-  const [lastSpeech, setLastSpeech] = useState<string>('');
-  const [speechSubtitleVisible, setSpeechSubtitleVisible] = useState(false);
 
-  // Recognition Ref
   const recognitionRef = useRef<any>(null);
 
   // Simulated Android Subsystems
@@ -190,7 +219,6 @@ export default function App() {
     { id: 'al-1', time: '07:00', label: 'الاستيقاظ والصباح', enabled: true, days: ['يومياً'] },
   ]);
   const [openedAppName, setOpenedAppName] = useState<string>('');
-  const [rainEnabled, setRainEnabled] = useState(true);
 
   // Call timer
   useEffect(() => {
@@ -203,7 +231,7 @@ export default function App() {
     return () => clearInterval(interval);
   }, [activeCall?.status]);
 
-  // Setup Web Speech API for Arabic Voice Input
+  // Web Speech Recognition (Arabic)
   useEffect(() => {
     const SpeechRecognitionClass =
       (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -242,7 +270,7 @@ export default function App() {
 
         recognitionRef.current = recognition;
       } catch (err) {
-        console.warn('Speech recognition setup error:', err);
+        console.warn('Speech recognition error:', err);
       }
     }
 
@@ -251,7 +279,7 @@ export default function App() {
         recognitionRef.current.abort();
       }
     };
-  }, []);
+  }, [status]);
 
   const toggleVoiceInput = () => {
     if (isListening) {
@@ -263,8 +291,7 @@ export default function App() {
       try {
         recognitionRef.current?.start();
       } catch {
-        // Fallback prompt if microphone is unavailable in browser
-        const promptText = window.prompt('تحدث مع مشمش (أو اكتب طلبك):', 'كيف حالك يا مشمش؟');
+        const promptText = window.prompt('', 'كيف حالك يا مشمش؟');
         if (promptText) {
           handleSendMessage(promptText);
         }
@@ -282,7 +309,6 @@ export default function App() {
         const phoneNumber = parameters.phone_number || '+966 55 123 4567';
         setStatus('executing');
         audioManager.playDialTone();
-        setNotificationToast(`جارِ الاتصال بـ ${contactName}...`);
 
         setActiveCall({
           contact_name: contactName,
@@ -306,7 +332,6 @@ export default function App() {
         const messageBody = parameters.message_body || 'رسالة جديدة';
         setStatus('executing');
         audioManager.playChime('success');
-        setNotificationToast(`تم إرسال الرسالة إلى ${contactName}`);
 
         setSmsThread({
           contact_name: contactName,
@@ -323,14 +348,13 @@ export default function App() {
         const platform = (parameters.platform || 'spotify').toLowerCase();
         setStatus('executing');
         audioManager.playChime('success');
-        setNotificationToast(`تشغيل "${query}"`);
 
         setMediaState({
           isPlaying: true,
           query: query,
           platform: platform.includes('spot') ? 'spotify' : 'youtube',
           title: query,
-          artist: 'مشغل الوسائط',
+          artist: 'مشغل الموسيقى',
           progress: 30,
         });
         setActiveScreen('MEDIA');
@@ -341,7 +365,6 @@ export default function App() {
         const appName = parameters.app_name || 'الكاميرا';
         setStatus('executing');
         audioManager.playChime('success');
-        setNotificationToast(`تم فتح تطبيق ${appName}`);
         setOpenedAppName(appName);
         setActiveScreen('GENERIC_APP');
         break;
@@ -352,7 +375,6 @@ export default function App() {
         const label = parameters.label || 'منبه';
         setStatus('executing');
         audioManager.playChime('success');
-        setNotificationToast(`تم ضبط المنبه: ${time}`);
 
         setAlarms((prev) => [
           { id: `al-${Date.now()}`, time, label, enabled: true, days: ['اليوم'] },
@@ -367,12 +389,25 @@ export default function App() {
     }
   };
 
-  // Send message to server
+  // Send message
   const handleSendMessage = async (text: string) => {
     if (!text.trim()) return;
 
     audioManager.stopSpeech();
     setStatus('thinking');
+
+    // Contextual gesture triggers based on speech intent
+    const norm = text.toLowerCase();
+    if (norm.includes('شعر') || norm.includes('سرحي')) {
+      handleTriggerGesture('hair');
+    } else if (norm.includes('يد') || norm.includes('لوحي') || norm.includes('حركي')) {
+      handleTriggerGesture('wave');
+    } else if (norm.includes('فكر') || norm.includes('تأمل') || norm.includes('رأيك')) {
+      handleTriggerGesture('think');
+    }
+
+    const nameMem = memories.find(m => m.key?.includes('اسم'));
+    const userName = nameMem ? nameMem.value : 'يا غالي';
 
     try {
       const response = await fetch('/api/chat', {
@@ -385,15 +420,43 @@ export default function App() {
         }),
       });
 
-      const data = await response.json();
-      const speech = data.speech || 'أهلاً بك!';
-      const action: ParsedAction = data.action || { intent: 'NONE', parameters: {} };
+      let data: any = {};
+      try {
+        data = await response.json();
+      } catch {
+        data = {};
+      }
+
+      let speech = data.speech || '';
+      let action: ParsedAction = data.action || { intent: 'NONE', parameters: {} };
       const autoMemories: MemoryItem[] = data.newMemories || [];
 
-      setLastSpeech(speech);
-      setSpeechSubtitleVisible(true);
+      // Local graceful human response if server returned empty or quota limited
+      if (!speech) {
+        if (norm.includes('يومك') || norm.includes('كيفك') || norm.includes('حالك')) {
+          speech = `أنا بأحسن حال لما بكون عم بحكي معك يا ${userName}! نورتني والله.. طمني أنت كيف يومك ومزاجك؟`;
+        } else if (norm.includes('سالفة') || norm.includes('قصة')) {
+          speech = `من عيوني! كان يا ما كان، الصداقة الحقيقية هي أجمل كنز بالحياة، وأنا ممتنة وسعيدة جداً بحديثي معك اليوم!`;
+        } else if (norm.includes('نكتة') || norm.includes('اضحك')) {
+          speech = 'هههه من عيوني! مرة واحد كسلان كتير سألوه شو أمنيتك بالحياة؟ قالهم نفسي أصحى من النوم ألاقي حالي نايم! يسعد هالضحكة الحلوة يا رب.';
+        } else if (norm.includes('متضايق') || norm.includes('تعبان') || norm.includes('فضفض')) {
+          speech = `سلامة قلبك وخاطرك يا ${userName}.. هونها وتهون، أنا جنبك وسامعتك بكل جوارحي، احكيلي شو شاغل بالك؟`;
+        } else if (norm.includes('شعر') || norm.includes('سرحي')) {
+          speech = 'تكرم عينك! رتبت وسرحت خصلات شعري بنعومة، شو رأيك بالطلة؟';
+        } else if (norm.includes('يد') || norm.includes('لوحي') || norm.includes('حركي')) {
+          speech = `يا مية أهلاً وسهلاً بـ ${userName}! هي عم لوحلك بكل ود وفرحة بوجودك.`;
+        } else if (norm.includes('فكر') || norm.includes('تأمل') || norm.includes('رأيك')) {
+          speech = 'عم فكر معك من كل قلبي، وأكيد سوا بنوصل لأحلى رأي وقرار!';
+        } else if (norm.includes('مرحبا') || norm.includes('أهلا') || norm.includes('سلام') || norm.includes('صباح') || norm.includes('مساء')) {
+          speech = `يا هلا وغلا بـ ${userName}! يسعدلي أوقاتك يا رب.. اشتقتلك، شو حابب نحكي أو نعمل سوا؟`;
+        } else {
+          speech = `يا عيني عليك! أنا معك وسامعتك بكل اهتمام.. احكيلي أكتر وخلينا نسولف على راحتنا!`;
+        }
+      }
 
-      // Save new auto-discovered memories
+      setLastSpeech(speech);
+
+      // Save memories
       if (autoMemories.length > 0) {
         setMemories((prev) => {
           let updated = [...prev];
@@ -418,11 +481,11 @@ export default function App() {
         });
       }
 
-      // Execute intent if any
+      // Execute intent
       executeIntent(action, speech);
 
-      // Play audio response
-      if (!isMuted) {
+      // Voice playback
+      if (!isMuted && speech) {
         setStatus('speaking');
         await audioManager.speak(
           speech,
@@ -432,22 +495,58 @@ export default function App() {
             voicePreset: personalization.voicePreset,
           },
           () => setStatus('speaking'),
-          () => {
-            setStatus('idle');
-            setTimeout(() => setSpeechSubtitleVisible(false), 4000);
-          }
+          () => setStatus('idle')
         );
       } else {
         setStatus('idle');
-        setTimeout(() => setSpeechSubtitleVisible(false), 4000);
       }
     } catch (err) {
-      console.error(err);
-      setStatus('idle');
+      console.warn('Chat network fallback:', err);
+      // Seamless offline / quota error fallback (كلام بشري طبيعي)
+      let fallbackSpeech = `يا عيني عليك! أنا معك وسامعتك باهتمام كبير.. احكيلي أكتر يا ${userName}!`;
+      let fallbackAction: ParsedAction = { intent: 'NONE', parameters: {} };
+
+      if (norm.includes('يومك') || norm.includes('كيفك') || norm.includes('حالك')) {
+        fallbackSpeech = `أنا بأحسن حال لما بكون عم بحكي معك يا ${userName}! طمني أنت كيف كان يومك اليوم؟`;
+      } else if (norm.includes('سالفة') || norm.includes('قصة')) {
+        fallbackSpeech = 'من عيوني! احكيلي أنت شو صار معك اليوم بالبداية وأنا بحكيلك أحلى حكاية!';
+      } else if (norm.includes('نكتة') || norm.includes('اضحك')) {
+        fallbackSpeech = 'هههه من عيوني! مرة واحد كسلان كتير سألوه شو أمنيتك بالحياة؟ قالهم نفسي أصحى من النوم ألاقي حالي نايم!';
+      } else if (norm.includes('متضايق') || norm.includes('تعبان') || norm.includes('فضفض')) {
+        fallbackSpeech = `سلامة قلبك وخاطرك يا ${userName}.. هونها وتهون، أنا جنبك وسامعتك بكل جوارحي، احكيلي شو اللي مضايقك؟`;
+      } else if (norm.includes('شعر') || norm.includes('سرحي')) {
+        handleTriggerGesture('hair');
+        fallbackSpeech = 'تكرم عينك! رتبت وسرحت خصلات شعري بنعومة، شو رأيك بالطلة؟';
+      } else if (norm.includes('يد') || norm.includes('لوحي') || norm.includes('حركي')) {
+        handleTriggerGesture('wave');
+        fallbackSpeech = `يا مية أهلاً وسهلاً بـ ${userName}! هي عم لوحلك بكل ود وترحاب.`;
+      } else if (norm.includes('اتصل') || norm.includes('مكالمة')) {
+        const match = text.match(/(?:اتصل(?:ي)?|مكالمة)\s+(?:بـ|ب|على)?\s*([^\s]+)/);
+        const name = match ? match[1] : 'جهة اتصال';
+        fallbackSpeech = `من عيوني التنتين! هلق بتصلك بـ ${name} فوراً.. ثواني وبكون الخط واصل!`;
+        fallbackAction = { intent: 'PHONE_CALL', parameters: { contact_name: name } };
+      }
+
+      setLastSpeech(fallbackSpeech);
+      executeIntent(fallbackAction, fallbackSpeech);
+      if (!isMuted && fallbackSpeech) {
+        setStatus('speaking');
+        await audioManager.speak(
+          fallbackSpeech,
+          {
+            pitch: personalization.voicePitch,
+            speed: personalization.voiceSpeed,
+            voicePreset: personalization.voicePreset,
+          },
+          () => setStatus('speaking'),
+          () => setStatus('idle')
+        );
+      } else {
+        setStatus('idle');
+      }
     }
   };
 
-  // Memory Handlers
   const handleAddMemory = (memory: Omit<MemoryItem, 'id' | 'createdAt'>) => {
     if (!memory.key?.trim() || !memory.value?.trim()) return;
 
@@ -483,227 +582,128 @@ export default function App() {
     setMemories((prev) => prev.filter((m) => m.id !== id));
   };
 
+  // Avatar Image selection
+  const getAvatarSrc = () => {
+    switch (personalization.avatarStyle) {
+      case 'cyber':
+        return cyberAvatar;
+      case 'cozy':
+        return cozyAvatar;
+      default:
+        return characterAvatarImg;
+    }
+  };
+
   return (
-    <div className="relative w-screen h-screen overflow-hidden flex items-center justify-center select-none font-['Cairo',sans-serif]">
-      {/* 1. Realistic Living Room Background (matching the user's uploaded reference image) */}
-      <img
-        src={livingRoomBg}
-        alt="Living Room"
-        className="absolute inset-0 w-full h-full object-cover object-center filter blur-[1px] scale-105 pointer-events-none"
-      />
-      {/* Subtle warm depth vignette */}
-      <div className="absolute inset-0 bg-black/15 pointer-events-none" />
-
-      {/* Realistic Animated Falling Rain Drops Overlay over Background */}
-      {rainEnabled && (
-        <RainCanvas 
-          intensity="moderate" 
-          windAngle={0.08} 
-          showGlassDroplets={true} 
-          className="z-10" 
-        />
-      )}
-
-      {/* 2. Top Minimalist Control Bar (Discreet Settings, Rain toggle & Mute buttons) */}
-      <div className="absolute top-4 sm:top-6 left-6 right-6 z-40 flex items-center justify-between pointer-events-auto max-w-4xl mx-auto">
-        {/* Welcome & Customization Button */}
+    <div className="relative w-screen h-screen overflow-hidden flex flex-col bg-black text-slate-100 select-none">
+      
+      {/* Discreet Minimalist Top Utility Buttons (No text, pure icons) */}
+      <div className="absolute top-4 inset-x-6 z-40 flex items-center justify-between pointer-events-auto">
+        {/* Settings / Welcome Screen Trigger */}
         <button
-          onClick={() => setShowWelcomeScreen(true)}
-          className="flex items-center gap-2 px-4 py-2 rounded-full bg-slate-900/75 hover:bg-slate-900/90 text-white/90 hover:text-white backdrop-blur-md border border-white/10 shadow-lg text-xs font-semibold transition active:scale-95"
-          title="تخصيص مشمش والذاكرة"
+          onClick={() => {
+            setWelcomeInitialStep(3);
+            setShowWelcomeScreen(true);
+          }}
+          className="p-3 rounded-full bg-slate-900/40 hover:bg-slate-900/70 text-white/70 hover:text-white backdrop-blur-md border border-white/10 shadow-lg transition active:scale-95"
+          title="إعدادات الواجهة والذاكرة"
         >
-          <Sliders className="w-4 h-4 text-orange-400" />
-          <span>تخصيص مشمش والذاكرة</span>
+          <Sliders className="w-5 h-5 text-orange-400" />
         </button>
 
-        {/* Right action group: Rain Toggle + Audio Mute */}
-        <div className="flex items-center gap-2">
-          {/* Rain Ambiance Toggle */}
-          <button
-            onClick={() => setRainEnabled(!rainEnabled)}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-full backdrop-blur-md border shadow-lg transition active:scale-95 text-xs font-medium ${
-              rainEnabled
-                ? 'bg-cyan-500/25 text-cyan-200 border-cyan-400/40 shadow-cyan-500/10'
-                : 'bg-slate-900/75 text-white/60 hover:text-white border-white/10'
-            }`}
-            title={rainEnabled ? 'إيقاف تأثير تساقط المطر' : 'تشغيل تساقط المطر الواقعي'}
-          >
-            <CloudRain className={`w-4 h-4 ${rainEnabled ? 'text-cyan-300 animate-pulse' : ''}`} />
-            <span className="hidden sm:inline">{rainEnabled ? 'مطر واقعي' : 'المطر متوقف'}</span>
-          </button>
-
-          {/* Audio Mute / Unmute */}
-          <button
-            onClick={() => {
-              setIsMuted(!isMuted);
-              if (!isMuted) audioManager.stopSpeech();
-            }}
-            className="p-2.5 rounded-full bg-slate-900/75 hover:bg-slate-900/90 text-white/90 hover:text-white backdrop-blur-md border border-white/10 shadow-lg transition active:scale-95"
-            title={isMuted ? 'تفعيل الصوت' : 'كتم الصوت'}
-          >
-            {isMuted ? (
-              <VolumeX className="w-4 h-4 text-rose-400" />
-            ) : (
-              <Volume2 className="w-4 h-4 text-orange-400" />
-            )}
-          </button>
-        </div>
+        {/* Audio Mute / Unmute */}
+        <button
+          onClick={() => {
+            setIsMuted(!isMuted);
+            if (!isMuted) audioManager.stopSpeech();
+          }}
+          className="p-3 rounded-full bg-slate-900/40 hover:bg-slate-900/70 text-white/70 hover:text-white backdrop-blur-md border border-white/10 shadow-lg transition active:scale-95"
+          title={isMuted ? 'تفعيل الصوت' : 'كتم الصوت'}
+        >
+          {isMuted ? <VolumeX className="w-5 h-5 text-rose-400" /> : <Volume2 className="w-5 h-5 text-orange-400" />}
+        </button>
       </div>
 
-      {/* 3. The Smartphone Frame Standing in the Living Room (Exact match to the user's image) */}
-      <div className="relative z-20 flex items-center justify-center h-[90vh] max-h-[820px] aspect-[9/18.5] transition-transform duration-500">
-        {/* Smartphone Chassis Exterior Body */}
-        <div className="relative w-full h-full rounded-[44px] bg-slate-950 p-[7px] shadow-[0_30px_70px_rgba(0,0,0,0.7),0_10px_25px_rgba(0,0,0,0.5)] border-[3px] border-slate-700/80 ring-1 ring-white/10 overflow-hidden flex flex-col">
-          
-          {/* Phone Top Notch / Speaker Grill */}
-          <div className="absolute top-2.5 left-1/2 -translate-x-1/2 z-40 flex items-center justify-center pointer-events-none">
-            <div className="w-20 h-4 bg-black rounded-b-xl flex items-center justify-center gap-2 border-b border-x border-slate-800">
-              <div className="w-8 h-1 bg-slate-800 rounded-full" />
-              <div className="w-2.5 h-2.5 bg-slate-900 rounded-full border border-slate-700" />
+      {/* Screen Router */}
+      <div className="flex-1 flex flex-col relative w-full h-full overflow-hidden">
+        {activeScreen === 'CALL' && activeCall ? (
+          <CallScreen
+            call={activeCall}
+            onEndCall={() => {
+              setActiveCall(null);
+              setActiveScreen('COMPANION');
+            }}
+            onToggleMute={() => {
+              setActiveCall((prev) => (prev ? { ...prev, isMuted: !prev.isMuted } : null));
+            }}
+            onToggleSpeaker={() => {
+              setActiveCall((prev) => (prev ? { ...prev, isSpeaker: !prev.isSpeaker } : null));
+            }}
+          />
+        ) : activeScreen === 'SMS' ? (
+          <SmsScreen
+            thread={smsThread}
+            onSendMessage={(txt) => {
+              setSmsThread((prev) => ({
+                ...prev,
+                messages: [
+                  ...prev.messages,
+                  { id: `sms-${Date.now()}`, sender: 'user', text: txt, timestamp: 'الآن' },
+                ],
+              }));
+              audioManager.playChime('success');
+            }}
+            onClose={() => setActiveScreen('COMPANION')}
+          />
+        ) : activeScreen === 'MEDIA' ? (
+          <MediaScreen
+            media={mediaState}
+            onTogglePlay={() => setMediaState((prev) => ({ ...prev, isPlaying: !prev.isPlaying }))}
+            onClose={() => setActiveScreen('COMPANION')}
+          />
+        ) : activeScreen === 'CLOCK' ? (
+          <ClockScreen
+            alarms={alarms}
+            onToggleAlarm={(id) => {
+              setAlarms((prev) =>
+                prev.map((a) => (a.id === id ? { ...a, enabled: !a.enabled } : a))
+              );
+            }}
+            onTriggerAlarmPreview={(al) => {
+              audioManager.playChime('alert');
+            }}
+            onClose={() => setActiveScreen('COMPANION')}
+          />
+        ) : activeScreen === 'GENERIC_APP' ? (
+          <GenericAppScreen
+            appName={openedAppName || 'الكاميرا'}
+            onClose={() => setActiveScreen('COMPANION')}
+          />
+        ) : (
+          /* PURE VIRTUAL CHARACTER COMPANION INTERFACE ON PURE BLACK BACKGROUND */
+          <div 
+            className="relative w-full h-full flex items-center justify-center overflow-hidden select-none bg-black"
+          >
+            {/* Virtual Character with Clean Portrait and Natural Responsive Head Physics */}
+            <div className="relative w-full h-full flex items-center justify-center">
+              <InteractiveCompanion
+                videoTheme={personalization.coreVideoTheme || 'golden'}
+                imageSrc={getAvatarSrc()}
+                status={status}
+                onTap={toggleVoiceInput}
+                activeGesture={activeGesture}
+                onGestureChange={(g) => setActiveGesture(g)}
+              />
             </div>
           </div>
-
-          {/* Smartphone Screen Glass */}
-          <div className="relative w-full h-full rounded-[37px] overflow-hidden bg-[#0c1424] flex flex-col justify-between">
-            
-            {/* Screen Router */}
-            {activeScreen === 'CALL' && activeCall ? (
-              <CallScreen
-                call={activeCall}
-                onEndCall={() => {
-                  setActiveCall(null);
-                  setActiveScreen('COMPANION');
-                }}
-                onToggleMute={() => {
-                  setActiveCall((prev) => (prev ? { ...prev, isMuted: !prev.isMuted } : null));
-                }}
-                onToggleSpeaker={() => {
-                  setActiveCall((prev) => (prev ? { ...prev, isSpeaker: !prev.isSpeaker } : null));
-                }}
-              />
-            ) : activeScreen === 'SMS' ? (
-              <SmsScreen
-                thread={smsThread}
-                onSendMessage={(txt) => {
-                  setSmsThread((prev) => ({
-                    ...prev,
-                    messages: [
-                      ...prev.messages,
-                      { id: `sms-${Date.now()}`, sender: 'user', text: txt, timestamp: 'الآن' },
-                    ],
-                  }));
-                  audioManager.playChime('success');
-                }}
-                onClose={() => setActiveScreen('COMPANION')}
-              />
-            ) : activeScreen === 'MEDIA' ? (
-              <MediaScreen
-                media={mediaState}
-                onTogglePlay={() => setMediaState((prev) => ({ ...prev, isPlaying: !prev.isPlaying }))}
-                onClose={() => setActiveScreen('COMPANION')}
-              />
-            ) : activeScreen === 'CLOCK' ? (
-              <ClockScreen
-                alarms={alarms}
-                onToggleAlarm={(id) => {
-                  setAlarms((prev) =>
-                    prev.map((a) => (a.id === id ? { ...a, enabled: !a.enabled } : a))
-                  );
-                }}
-                onTriggerAlarmPreview={(al) => {
-                  audioManager.playChime('alert');
-                  setNotificationToast(`🔔 رنين المنبه: ${al.time}`);
-                }}
-                onClose={() => setActiveScreen('COMPANION')}
-              />
-            ) : activeScreen === 'GENERIC_APP' ? (
-              <GenericAppScreen
-                appName={openedAppName || 'الكاميرا'}
-                onClose={() => setActiveScreen('COMPANION')}
-              />
-            ) : (
-              /* PURE REALISTIC MISHMISH COMPANION SCREEN (Zero text clutter, matching the image) */
-              <div 
-                onClick={toggleVoiceInput}
-                className="relative w-full h-full flex flex-col justify-end items-center cursor-pointer overflow-hidden group"
-              >
-                {/* Lifelike Mishmish Portrait Image (standing inside phone, matching uploaded image) */}
-                <img
-                  src={phoneAvatarImg}
-                  alt="مشمش"
-                  className={`absolute inset-0 w-full h-full object-cover object-top transition-transform duration-700 select-none pointer-events-none ${
-                    status === 'speaking' ? 'scale-[1.02]' : 'scale-100'
-                  }`}
-                />
-
-                {/* Subtle dark gradient at bottom for natural depth */}
-                <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[#0c1424] via-[#0c1424]/70 to-transparent pointer-events-none" />
-
-                {/* Gentle Pulsing Soundwave Aura when speaking or listening */}
-                {(status === 'speaking' || status === 'listening') && (
-                  <div className="absolute bottom-16 inset-x-0 flex items-center justify-center pointer-events-none z-30">
-                    <div className="flex items-end gap-1.5 px-4 py-2 bg-slate-950/80 backdrop-blur-md rounded-full border border-orange-500/30 shadow-xl">
-                      <div className="w-1.5 bg-orange-400 rounded-full animate-soundwave-1" />
-                      <div className="w-1.5 bg-amber-300 rounded-full animate-soundwave-2" />
-                      <div className="w-1.5 bg-orange-500 rounded-full animate-soundwave-3" />
-                      <div className="w-1.5 bg-amber-400 rounded-full animate-soundwave-4" />
-                      <div className="w-1.5 bg-orange-300 rounded-full animate-soundwave-5" />
-                    </div>
-                  </div>
-                )}
-
-                {/* Minimalist Floating Microphone Pill at Bottom */}
-                <div className="relative z-30 mb-8 flex flex-col items-center pointer-events-auto">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleVoiceInput();
-                    }}
-                    className={`p-4 rounded-full transition-all duration-300 shadow-2xl flex items-center justify-center ${
-                      isListening
-                        ? 'bg-rose-500 text-white scale-110 shadow-rose-500/50 animate-pulse'
-                        : status === 'speaking'
-                        ? 'bg-orange-500 text-white shadow-orange-500/40'
-                        : 'bg-white/15 hover:bg-white/25 text-white backdrop-blur-md border border-white/20 hover:scale-105 active:scale-95'
-                    }`}
-                    title={isListening ? 'إيقاف الاستماع' : 'اضغط للتحدث صوتياً مع مشمش'}
-                  >
-                    {isListening ? (
-                      <MicOff className="w-6 h-6" />
-                    ) : (
-                      <Mic className="w-6 h-6" />
-                    )}
-                  </button>
-                </div>
-
-                {/* Floating Notification Toast (auto-fades) */}
-                {notificationToast && (
-                  <div className="absolute top-12 inset-x-3 z-40 animate-in fade-in slide-in-from-top-2 duration-300 pointer-events-none">
-                    <div className="bg-slate-900/90 text-white text-xs font-medium px-3.5 py-2 rounded-2xl border border-white/10 shadow-xl text-center backdrop-blur-md">
-                      {notificationToast}
-                    </div>
-                  </div>
-                )}
-
-                {/* Subtle Speech Subtitle (temporary, clean, no clutter) */}
-                {speechSubtitleVisible && lastSpeech && (
-                  <div className="absolute bottom-24 inset-x-4 z-30 pointer-events-none animate-in fade-in duration-300">
-                    <div className="bg-slate-950/80 backdrop-blur-md border border-white/10 rounded-2xl p-3 text-center shadow-xl">
-                      <p className="text-xs text-white/95 leading-relaxed font-medium">
-                        "{lastSpeech}"
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
+        )}
       </div>
 
-      {/* 4. Welcome & Customization Screen Modal (لصفحة الترحيب وتخصيص مشمش والذاكرة) */}
+      {/* Welcome & Customization Screen Modal (Matching the user's 3 screenshots) */}
       {showWelcomeScreen && (
         <WelcomeCustomizationScreen
+          initialStep={welcomeInitialStep}
+          onClose={() => setShowWelcomeScreen(false)}
           personalization={personalization}
           onUpdatePersonalization={(newSettings) => setPersonalization(newSettings)}
           memories={memories}
@@ -712,7 +712,7 @@ export default function App() {
           onStartExperience={() => {
             setShowWelcomeScreen(false);
             try {
-              localStorage.setItem('meshmesh_welcomed_v2', 'true');
+              localStorage.setItem('meshmesh_welcomed_v4', 'true');
             } catch (e) {
               console.warn(e);
             }

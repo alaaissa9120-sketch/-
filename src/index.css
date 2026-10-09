@@ -32,6 +32,51 @@
   }
 }
 
+/* Realistic Natural Breathing */
+@keyframes natural-breathing {
+  0%, 100% {
+    transform: translateY(0px) scale(1, 1);
+  }
+  50% {
+    transform: translateY(-3px) scale(1.005, 1.008);
+  }
+}
+
+.animate-breathing {
+  animation: natural-breathing 4.5s ease-in-out infinite;
+}
+
+/* Subtle Lifelike Micro Sway */
+@keyframes micro-sway {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  33% {
+    transform: rotate(0.4deg);
+  }
+  66% {
+    transform: rotate(-0.35deg);
+  }
+}
+
+.animate-micro-sway {
+  animation: micro-sway 7.5s ease-in-out infinite;
+}
+
+/* Soft blush pulse */
+@keyframes blush-pulse {
+  0%, 100% {
+    opacity: 0.15;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.animate-blush {
+  animation: blush-pulse 2.5s ease-in-out infinite;
+}
+
 .animate-soundwave-1 {
   animation: soundwave 1.1s ease-in-out infinite;
 }

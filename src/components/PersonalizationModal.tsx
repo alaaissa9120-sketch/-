@@ -7,6 +7,8 @@ import { PersonalizationSettings } from '../types';
 import classicAvatar from '../assets/images/meshmesh_avatar_1791506916142.jpg';
 import cyberAvatar from '../assets/images/meshmesh_cyber_1791507090382.jpg';
 import cozyAvatar from '../assets/images/meshmesh_cozy_1791507103483.jpg';
+import goldenSphereImg from '../assets/images/golden_energy_sphere_1791548187564.jpg';
+import cyberSphereImg from '../assets/images/cyber_violet_sphere_1791548205879.jpg';
 import { audioManager } from '../utils/audio';
 
 interface PersonalizationModalProps {
@@ -49,6 +51,7 @@ export const PersonalizationModal: React.FC<PersonalizationModalProps> = ({
       avatarStyle: 'classic',
       auraColor: 'peach',
       glowIntensity: 70,
+      coreVideoTheme: 'golden',
       voicePitch: 1.05,
       voiceSpeed: 1.0,
       voicePreset: 'kore',
@@ -379,6 +382,54 @@ export const PersonalizationModal: React.FC<PersonalizationModalProps> = ({
           {/* 3. APPEARANCE & AURA */}
           {activeTab === 'appearance' && (
             <div className="space-y-5">
+              {/* Live Core Video Interface - Clean two boxes */}
+              <div>
+                <label className="text-xs font-semibold text-slate-300 mb-2 block text-right">
+                  الواجهة:
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setCurrent({ ...current, coreVideoTheme: 'golden' })}
+                    className={`p-3 rounded-2xl border text-center flex flex-col items-center justify-center gap-2 transition ${
+                      (current.coreVideoTheme || 'golden') === 'golden'
+                        ? 'border-amber-500 bg-amber-950/30 ring-1 ring-amber-500/50'
+                        : 'border-slate-800 bg-slate-950/60 hover:border-slate-700'
+                    }`}
+                  >
+                    <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-black border border-amber-500/30">
+                      <img src={goldenSphereImg} alt="الواجهة 1" className="w-full h-full object-cover" />
+                      {(current.coreVideoTheme || 'golden') === 'golden' && (
+                        <div className="absolute top-1 right-1 w-5 h-5 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center text-[10px] font-black shadow">
+                          ✓
+                        </div>
+                      )}
+                    </div>
+                    <span className="text-xs font-bold text-slate-200">الواجهة الأولى</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setCurrent({ ...current, coreVideoTheme: 'cyber_violet' })}
+                    className={`p-3 rounded-2xl border text-center flex flex-col items-center justify-center gap-2 transition ${
+                      current.coreVideoTheme === 'cyber_violet'
+                        ? 'border-purple-500 bg-purple-950/30 ring-1 ring-purple-500/50'
+                        : 'border-slate-800 bg-slate-950/60 hover:border-slate-700'
+                    }`}
+                  >
+                    <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-black border border-purple-500/30">
+                      <img src={cyberSphereImg} alt="الواجهة 2" className="w-full h-full object-cover" />
+                      {current.coreVideoTheme === 'cyber_violet' && (
+                        <div className="absolute top-1 right-1 w-5 h-5 rounded-full bg-purple-500 text-white flex items-center justify-center text-[10px] font-black shadow">
+                          ✓
+                        </div>
+                      )}
+                    </div>
+                    <span className="text-xs font-bold text-slate-200">الواجهة الثانية</span>
+                  </button>
+                </div>
+              </div>
+
               {/* Avatar Style Choice */}
               <div>
                 <label className="text-xs font-semibold text-slate-300 mb-2 block">

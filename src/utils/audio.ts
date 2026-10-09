@@ -172,31 +172,71 @@ class AudioManager {
     this.fallbackBrowserSpeech(cleanText, pitch, speed, onEnd);
   }
 
-  private fallbackBrowserSpeech(text: string, pitch = 1.05, speed = 1.0, onEnd?: () => void) {
+  private cachedVoices: SpeechSynthesisVoice[] = [];
+
+  constructor() {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      this.cachedVoices = window.speechSynthesis.getVoices();
+      window.speechSynthesis.onvoiceschanged = () => {
+        this.cachedVoices = window.speechSynthesis.getVoices();
+      };
+    }
+  }
+
+  private fallbackBrowserSpeech(text: string, pitch = 1.06, speed = 0.96, onEnd?: () => void) {
     if (!('speechSynthesis' in window)) {
       onEnd?.();
       return;
     }
 
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'ar-SA';
-    utterance.rate = speed;
-    utterance.pitch = pitch;
+    // Add gentle commas for natural human conversational pauses between thoughts
+    const conversationalText = text
+      .replace(/([.!?])\s+/g, '$1 ، ')
+      .replace(/\s+/g, ' ')
+      .trim();
 
-    // Pick best Arabic voice available
-    const voices = window.speechSynthesis.getVoices();
-    const arabicVoice = voices.find(v => v.lang.startsWith('ar') || v.name.includes('Arabic'));
+    const utterance = new SpeechSynthesisUtterance(conversationalText);
+    utterance.lang = 'ar-SA';
+    utterance.rate = Math.max(0.85, Math.min(speed, 0.98));
+    utterance.pitch = Math.max(1.0, pitch);
+
+    // Pick best natural feminine Arabic voice available
+    const voices = this.cachedVoices.length > 0 ? this.cachedVoices : window.speechSynthesis.getVoices();
+    const arabicFemale = voices.find(v => 
+      (v.lang.startsWith('ar') || v.name.includes('Arabic') || v.name.includes('عربي')) && 
+      (v.name.toLowerCase().includes('female') || 
+       v.name.includes('Laila') || 
+       v.name.includes('Zeina') || 
+       v.name.includes('Salma') || 
+       v.name.includes('Zariyah') || 
+       v.name.includes('Maryam') || 
+       v.name.includes('Hoda') ||
+       v.name.includes('Google'))
+    );
+    const arabicVoice = arabicFemale || voices.find(v => v.lang.startsWith('ar') || v.name.includes('Arabic') || v.name.includes('عربي'));
     if (arabicVoice) {
       utterance.voice = arabicVoice;
     }
 
-    utterance.onend = () => {
-      onEnd?.();
+    let ended = false;
+    let safetyTimer: any = null;
+
+    const safeEnd = () => {
+      if (safetyTimer) clearTimeout(safetyTimer);
+      if (!ended) {
+        ended = true;
+        onEnd?.();
+      }
     };
 
-    utterance.onerror = () => {
-      onEnd?.();
-    };
+    utterance.onend = safeEnd;
+    utterance.onerror = safeEnd;
+
+    // Safety timeout in case speechSynthesis hangs
+    const estimatedDurationMs = Math.max(2500, conversationalText.length * 95);
+    safetyTimer = setTimeout(() => {
+      safeEnd();
+    }, estimatedDurationMs + 2000);
 
     window.speechSynthesis.speak(utterance);
   }
