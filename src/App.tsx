@@ -146,14 +146,8 @@ export default function App() {
     }
   }, [memories]);
 
-  // Welcome / Customization Onboarding Modal
-  const [showWelcomeScreen, setShowWelcomeScreen] = useState(() => {
-    try {
-      return !localStorage.getItem('meshmesh_welcomed_v2');
-    } catch {
-      return true;
-    }
-  });
+  // Welcome / Customization Onboarding Modal (Always initial landing screen)
+  const [showWelcomeScreen, setShowWelcomeScreen] = useState(true);
 
   // App & Intent Screens
   const [activeScreen, setActiveScreen] = useState<ActiveAppScreen>('COMPANION');
@@ -527,6 +521,18 @@ export default function App() {
 
   return (
     <div className="relative w-screen h-screen overflow-hidden flex flex-col justify-between select-none font-['Cairo',sans-serif] bg-[#0c1424]">
+      {/* High-Definition Animated Video Background */}
+      <video
+        autoPlay
+        loop
+        muted
+        playsInline
+        className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none z-0 filter brightness-90 contrast-105"
+      >
+        <source src="/bg_video.mp4" type="video/mp4" />
+      </video>
+      <div className="absolute inset-0 bg-slate-950/20 pointer-events-none z-0" />
+
       {/* Top Minimalist Control Bar */}
       <div className="absolute top-4 sm:top-6 left-6 right-6 z-40 flex items-center justify-between pointer-events-auto max-w-4xl mx-auto">
         {/* Welcome & Customization Button */}

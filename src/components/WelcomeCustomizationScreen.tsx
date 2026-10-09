@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
   Sparkles, Brain, Sliders, Volume2, Heart, Smile, MessageCircle, 
-  User, Check, Play, Trash2, ArrowLeft, Calendar, Coffee, ShieldCheck, Zap, Bot, Mic, Cpu
+  User, Check, Play, Trash2, ArrowLeft, Calendar, Coffee, ShieldCheck, Zap, Bot, Mic, Cpu, Phone
 } from 'lucide-react';
 import { PersonalizationSettings, MemoryItem } from '../types';
 import phoneAvatarImg from '../assets/images/meshmesh_avatar_1791506916142.jpg';
@@ -34,10 +34,15 @@ export const WelcomeCustomizationScreen: React.FC<WelcomeCustomizationScreenProp
   const [memoryGeneralActive, setMemoryGeneralActive] = useState(false);
   const [memoryPersonalActive, setMemoryPersonalActive] = useState(false);
 
-  // Quick user name input
+  // Quick user inputs (Step 1 only)
   const [userName, setUserName] = useState(() => {
     const nameMem = memories.find((m) => m.key.includes('الاسم') || m.key.includes('اسم'));
     return nameMem ? nameMem.value : 'علاء';
+  });
+
+  const [userPhone, setUserPhone] = useState(() => {
+    const phoneMem = memories.find((m) => m.key.includes('جوال') || m.key.includes('هاتف') || m.key.includes('رقم'));
+    return phoneMem ? phoneMem.value : '+963 912 345 678';
   });
 
   const handleTestVoice = async () => {
@@ -64,6 +69,14 @@ export const WelcomeCustomizationScreen: React.FC<WelcomeCustomizationScreenProp
         source: 'manual',
       });
     }
+    if (userPhone.trim()) {
+      onAddMemory({
+        category: 'profile',
+        key: 'رقم الجوال',
+        value: userPhone.trim(),
+        source: 'manual',
+      });
+    }
   };
 
   const handleFinish = () => {
@@ -74,7 +87,7 @@ export const WelcomeCustomizationScreen: React.FC<WelcomeCustomizationScreenProp
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 overflow-hidden select-none font-['Cairo',sans-serif] bg-slate-950">
-      {/* Background Gradient Orbs matching the uploaded reference images */}
+      {/* Background Gradient Orbs matching reference images */}
       <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-orange-600/15 rounded-full blur-[150px]" />
         <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-indigo-600/15 rounded-full blur-[150px]" />
@@ -134,7 +147,7 @@ export const WelcomeCustomizationScreen: React.FC<WelcomeCustomizationScreenProp
 
         {/* ================= STEP 1: WELCOME (Matching Image 1) ================= */}
         {activeStep === 'welcome' && (
-          <div className="space-y-8 py-2">
+          <div className="space-y-6 py-2">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
               {/* Left Side: 3D Robot Avatar */}
               <div className="flex justify-center items-center relative">
@@ -172,21 +185,37 @@ export const WelcomeCustomizationScreen: React.FC<WelcomeCustomizationScreenProp
               </div>
             </div>
 
-            {/* Bottom Input & Next Button */}
-            <div className="space-y-3 pt-4 border-t border-white/10 text-right">
+            {/* Bottom Inputs (Name + Phone Number) & Next Button */}
+            <div className="space-y-4 pt-4 border-t border-white/10 text-right">
               <label className="text-sm font-bold text-slate-300 block">
-                كيف يمكنني مناداتك؟
+                كيف يمكنني مناداتك والتعرف عليك؟
               </label>
-              <div className="flex flex-col sm:flex-row gap-4 items-center">
-                <div className="flex-1 w-full relative">
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="relative">
+                  <label className="text-xs font-semibold text-slate-400 mb-1 block">اسم المستخدم:</label>
                   <input
                     type="text"
                     value={userName}
                     onChange={(e) => setUserName(e.target.value)}
                     placeholder="اسم المستخدم"
-                    className="w-full bg-slate-950/90 border border-orange-500/40 focus:border-orange-500 rounded-2xl px-5 py-3.5 text-sm text-white placeholder-slate-500 focus:outline-none shadow-inner transition"
+                    className="w-full bg-slate-950/90 border border-orange-500/40 focus:border-orange-500 rounded-2xl px-5 py-3 text-sm text-white placeholder-slate-500 focus:outline-none shadow-inner transition"
                   />
                 </div>
+
+                <div className="relative">
+                  <label className="text-xs font-semibold text-slate-400 mb-1 block">رقم الجوال:</label>
+                  <input
+                    type="text"
+                    value={userPhone}
+                    onChange={(e) => setUserPhone(e.target.value)}
+                    placeholder="رقم الجوال (مثال: +963...)"
+                    className="w-full bg-slate-950/90 border border-orange-500/40 focus:border-orange-500 rounded-2xl px-5 py-3 text-sm text-white placeholder-slate-500 focus:outline-none shadow-inner transition"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-2">
                 <button
                   onClick={() => setActiveStep('memory')}
                   className="w-full sm:w-auto px-10 py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-sm shadow-[0_0_30px_rgba(249,115,22,0.4)] active:scale-95 transition flex items-center justify-center gap-2"
@@ -300,31 +329,20 @@ export const WelcomeCustomizationScreen: React.FC<WelcomeCustomizationScreenProp
               </div>
             </div>
 
-            {/* Bottom Row */}
-            <div className="flex flex-col sm:flex-row gap-4 items-center pt-4 border-t border-white/10">
-              <div className="flex-1 w-full relative">
-                <input
-                  type="text"
-                  value={userName}
-                  onChange={(e) => setUserName(e.target.value)}
-                  placeholder="اسم المستخدم"
-                  className="w-full bg-slate-950/90 border border-orange-500/40 focus:border-orange-500 rounded-2xl px-5 py-3 text-sm text-white placeholder-slate-500 focus:outline-none"
-                />
-              </div>
-              <div className="flex gap-3 w-full sm:w-auto">
-                <button
-                  onClick={() => setActiveStep('welcome')}
-                  className="px-5 py-3 rounded-2xl border border-white/20 text-slate-300 hover:text-white text-xs font-semibold transition"
-                >
-                  السابق
-                </button>
-                <button
-                  onClick={() => setActiveStep('personality')}
-                  className="flex-1 sm:flex-none px-8 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-sm shadow-[0_0_30px_rgba(249,115,22,0.4)] active:scale-95 transition"
-                >
-                  <span>التالي (التخصيص)</span>
-                </button>
-              </div>
+            {/* Bottom Nav Row (Name input removed as requested) */}
+            <div className="flex justify-between items-center pt-4 border-t border-white/10">
+              <button
+                onClick={() => setActiveStep('welcome')}
+                className="px-5 py-3 rounded-2xl border border-white/20 text-slate-300 hover:text-white text-xs font-semibold transition"
+              >
+                السابق
+              </button>
+              <button
+                onClick={() => setActiveStep('personality')}
+                className="px-8 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-sm shadow-[0_0_30px_rgba(249,115,22,0.4)] active:scale-95 transition"
+              >
+                <span>التالي (التخصيص)</span>
+              </button>
             </div>
           </div>
         )}
@@ -445,32 +463,21 @@ export const WelcomeCustomizationScreen: React.FC<WelcomeCustomizationScreenProp
               </div>
             </div>
 
-            {/* Bottom Row */}
-            <div className="flex flex-col sm:flex-row gap-4 items-center pt-4 border-t border-white/10">
-              <div className="flex-1 w-full relative">
-                <input
-                  type="text"
-                  value={userName}
-                  onChange={(e) => setUserName(e.target.value)}
-                  placeholder="اسم المستخدم"
-                  className="w-full bg-slate-950/90 border border-orange-500/40 focus:border-orange-500 rounded-2xl px-5 py-3 text-sm text-white placeholder-slate-500 focus:outline-none"
-                />
-              </div>
-              <div className="flex gap-3 w-full sm:w-auto">
-                <button
-                  onClick={() => setActiveStep('memory')}
-                  className="px-5 py-3 rounded-2xl border border-white/20 text-slate-300 hover:text-white text-xs font-semibold transition"
-                >
-                  السابق
-                </button>
-                <button
-                  onClick={handleFinish}
-                  className="flex-1 sm:flex-none px-8 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-sm shadow-[0_0_30px_rgba(249,115,22,0.4)] active:scale-95 transition flex items-center justify-center gap-2"
-                >
-                  <Check className="w-4 h-4 stroke-[3]" />
-                  <span>التالي (التخصيص)</span>
-                </button>
-              </div>
+            {/* Bottom Nav Row (Name input removed as requested) */}
+            <div className="flex justify-between items-center pt-4 border-t border-white/10">
+              <button
+                onClick={() => setActiveStep('memory')}
+                className="px-5 py-3 rounded-2xl border border-white/20 text-slate-300 hover:text-white text-xs font-semibold transition"
+              >
+                السابق
+              </button>
+              <button
+                onClick={handleFinish}
+                className="px-8 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-sm shadow-[0_0_30px_rgba(249,115,22,0.4)] active:scale-95 transition flex items-center justify-center gap-2"
+              >
+                <Check className="w-4 h-4 stroke-[3]" />
+                <span>بدء التجربة والحديث مع مشمش</span>
+              </button>
             </div>
           </div>
         )}
