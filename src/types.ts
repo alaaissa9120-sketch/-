@@ -38,6 +38,8 @@ export interface PersonalizationSettings {
   avatarStyle: 'classic' | 'cyber' | 'cozy';
   auraColor: 'peach' | 'cyan' | 'violet' | 'emerald' | 'amber';
   glowIntensity: number; // 20 to 100
+  coreVideoTheme?: 'golden' | 'cyber_violet'; // Video interface selection
+  userPhone?: string;
   
   // Voice Customization
   voicePitch: number; // 0.6 to 1.4 (default 1.05)
